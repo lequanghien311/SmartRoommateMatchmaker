@@ -1,0 +1,20 @@
+const express = require('express');
+const { pool, transaction } = require('../../database/connection');
+const { messaging } = require('../../shared/providers');
+const { authenticate, authorize } = require('../../shared/middlewares/auth');
+const { service: notifications } = require('../notifications/notifications.routes');
+const Repository = require('./admin.repository');
+const Service = require('./admin.service');
+const Controller = require('./admin.controller');
+const controller = new Controller(new Service(new Repository(pool, transaction), messaging, notifications));
+const router = express.Router();
+router.use(authenticate, authorize('admin'));
+router.get('/dashboard', controller.dashboard);
+router.get('/users', controller.users);
+router.patch('/users/:id/status', controller.userStatus);
+router.get('/rooms', controller.rooms);
+router.patch('/rooms/:id/status', controller.roomStatus);
+router.get('/reports', controller.reports);
+router.patch('/reports/:id/status', controller.reportStatus);
+module.exports = router;
+

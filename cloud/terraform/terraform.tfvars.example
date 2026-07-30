@@ -1,0 +1,10 @@
+project_name               = "smart-roommate"
+environment                = "dev"
+location                   = "southeastasia"
+postgres_admin_username    = "smartadmin"
+postgres_admin_password    = "SET_VIA_TF_VAR_OR_SECRET_STORE"
+enable_aks                 = false
+enable_gateway             = false
+enable_front_door          = false
+enable_api_management      = false
+

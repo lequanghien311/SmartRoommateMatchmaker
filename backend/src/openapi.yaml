@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: Smart Roommate Matchmaker API
+  version: 1.0.0
+  description: API tìm phòng, ghép người ở, chat và quản trị.
+servers:
+  - url: /api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        data: {}
+        meta: { type: object }
+    Login:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    Room:
+      type: object
+      required: [title, description, monthlyPrice, area, address, province, district, roomType]
+      properties:
+        title: { type: string }
+        description: { type: string, minLength: 20 }
+        monthlyPrice: { type: number, minimum: 1 }
+        deposit: { type: number, minimum: 0 }
+        area: { type: number, minimum: 1 }
+        address: { type: string }
+        province: { type: string }
+        district: { type: string }
+        ward: { type: string }
+        roomType: { type: string }
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Kiểm tra API
+      responses:
+        '200': { description: Healthy }
+  /health/database:
+    get:
+      security: []
+      summary: Kiểm tra PostgreSQL
+      responses:
+        '200': { description: Healthy }
+  /auth/register:
+    post:
+      security: []
+      summary: Đăng ký
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, phone, fullName, role, password]
+              properties:
+                email: { type: string, format: email }
+                phone: { type: string }
+                fullName: { type: string }
+                role: { type: string, enum: [tenant, landlord] }
+                password: { type: string, minLength: 8 }
+      responses:
+        '201': { description: Đăng ký thành công }
+        '409': { description: Email hoặc điện thoại trùng }
+  /auth/login:
+    post:
+      security: []
+      summary: Đăng nhập
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Login' }
+      responses:
+        '200': { description: Đăng nhập thành công }
+        '401': { description: Sai thông tin đăng nhập }
+  /auth/me:
+    get:
+      summary: Người dùng hiện tại
+      responses:
+        '200': { description: Thành công }
+  /rooms:
+    get:
+      security: []
+      summary: Tìm và lọc phòng active
+      parameters:
+        - { in: query, name: keyword, schema: { type: string } }
+        - { in: query, name: minPrice, schema: { type: number } }
+        - { in: query, name: maxPrice, schema: { type: number } }
+        - { in: query, name: province, schema: { type: string } }
+        - { in: query, name: district, schema: { type: string } }
+        - { in: query, name: sort, schema: { type: string, enum: [newest, price_asc, price_desc, popular] } }
+        - { in: query, name: page, schema: { type: integer } }
+      responses:
+        '200': { description: Danh sách phòng }
+    post:
+      summary: Chủ trọ tạo phòng
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Room' }
+      responses:
+        '201': { description: Tạo thành công }
+  /rooms/{id}:
+    get:
+      security: []
+      summary: Chi tiết phòng
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Chi tiết phòng }
+        '404': { description: Không tìm thấy }
+  /favorites:
+    get:
+      summary: Danh sách yêu thích
+      responses:
+        '200': { description: Thành công }
+  /roommate-profile:
+    get:
+      summary: Hồ sơ ở ghép
+      responses:
+        '200': { description: Thành công }
+    put:
+      summary: Tạo hoặc cập nhật hồ sơ
+      responses:
+        '200': { description: Thành công }
+  /matches:
+    get:
+      summary: Xếp hạng ứng viên
+      responses:
+        '200': { description: Kết quả matching }
+  /conversations:
+    get:
+      summary: Danh sách cuộc trò chuyện
+      responses:
+        '200': { description: Thành công }
+    post:
+      summary: Tạo cuộc trò chuyện
+      responses:
+        '201': { description: Thành công }
+  /notifications:
+    get:
+      summary: Danh sách thông báo
+      responses:
+        '200': { description: Thành công }
+  /reports:
+    post:
+      summary: Báo cáo phòng
+      responses:
+        '201': { description: Thành công }
+  /admin/dashboard:
+    get:
+      summary: Dashboard quản trị
+      responses:
+        '200': { description: Thành công }
+

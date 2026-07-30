@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+.git
+*.zip
+docker-logs
+latest-logs
+uploads
+backend-deploy.zip
+deploy.zip
+prebuilt.zip
+app.zip
+clean-deploy.zip

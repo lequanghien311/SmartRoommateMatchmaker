@@ -1,0 +1,62 @@
+name: Deploy Smart Roommate to Azure
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install production dependencies
+        working-directory: backend
+        run: npm ci --omit=dev
+
+      - name: Verify local health endpoint
+        working-directory: backend
+        run: |
+          npm start &
+          SERVER_PID=$!
+          sleep 3
+          curl --fail http://localhost:3000/api/health
+          kill $SERVER_PID
+
+      - name: Package prebuilt Linux artifact
+        run: |
+          cd backend
+          mkdir -p uploads public
+          zip -r ../prebuilt-deploy.zip package.json package-lock.json src public uploads node_modules -x "*.env*" -x "*tests*" -x "*coverage*" -x "*logs*"
+
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy prebuilt artifact to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: app-smartroommate-ea
+          package: prebuilt-deploy.zip
+
+      - name: Verify Production Health
+        run: |
+          sleep 15
+          curl --fail https://app-smartroommate-ea.azurewebsites.net/api/health

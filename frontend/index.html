@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SmartRoomie - tìm phòng và người ở ghép phù hợp cho sinh viên." />
+    <meta name="theme-color" content="#13261f" />
+    <title>SmartRoomie — Ở đúng nơi, gặp đúng người</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Bỏ qua đến nội dung</a>
+    <header id="site-header"></header>
+    <main id="main-content" tabindex="-1">
+      <div class="page-loading" aria-live="polite">
+        <span class="spinner"></span>
+        <p>Đang chuẩn bị không gian của bạn…</p>
+      </div>
+    </main>
+    <footer id="site-footer"></footer>
+    <div id="toast-region" class="toast-region" aria-live="polite"></div>
+    <div id="modal-root"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/assets/js/app.js"></script>
+  </body>
+</html>

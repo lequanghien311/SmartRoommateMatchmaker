@@ -1,0 +1,53 @@
+{
+  "name": "smart-roommate-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Roommate Matchmaker modular monolith API",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "migrate": "node src/database/migrate.js",
+    "seed": "node src/database/seed.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --runInBand",
+    "lint": "eslint src tests ../frontend --ext .js",
+    "format": "prettier --write \"{src,tests}/**/*.js\" \"../frontend/**/*.{html,css,js}\" \"../docs/**/*.md\"",
+    "validate": "npm run lint && npm run test"
+  },
+  "dependencies": {
+    "@azure/service-bus": "^7.9.5",
+    "@azure/storage-blob": "^12.27.0",
+    "@azure/web-pubsub": "^1.1.2",
+    "applicationinsights": "^3.9.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.6.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "openai": "^5.11.0",
+    "pg": "^8.16.3",
+    "sanitize-html": "^2.13.1",
+    "socket.io": "^4.8.1",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "jest": "^30.0.5",
+    "prettier": "^3.6.2",
+    "supertest": "^7.1.4"
+  }
+}

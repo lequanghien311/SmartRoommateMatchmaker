@@ -1,0 +1,47 @@
+services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: smart_roommate
+      POSTGRES_USER: smart_roommate
+      POSTGRES_PASSWORD: local_dev_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smart_roommate -d smart_roommate"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://smart_roommate:local_dev_password@database:5432/smart_roommate
+      JWT_SECRET: local-docker-access-secret-change-before-production
+      REFRESH_TOKEN_SECRET: local-docker-refresh-secret-change-before-production
+      STORAGE_PROVIDER: local
+      MESSAGING_PROVIDER: local
+      REALTIME_PROVIDER: socketio
+      MATCHING_PROVIDER: rule-based
+      CACHE_PROVIDER: memory
+      CORS_ORIGIN: http://localhost:3000
+      UPLOAD_DIR: /app/uploads
+    depends_on:
+      database:
+        condition: service_healthy
+    command: sh -c "npm run migrate && npm run seed && npm start"
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  uploads_data:
+

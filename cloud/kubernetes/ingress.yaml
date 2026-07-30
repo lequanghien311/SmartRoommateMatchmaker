@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smart-roommate
+  namespace: smart-roommate
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 6m
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [smart-roommate.example.com]
+      secretName: smart-roommate-tls
+  rules:
+    - host: smart-roommate.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smart-roommate-api
+                port:
+                  number: 80
+

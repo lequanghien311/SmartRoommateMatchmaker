@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smart-roommate-config
+  namespace: smart-roommate
+data:
+  NODE_ENV: production
+  PORT: "3000"
+  STORAGE_PROVIDER: azure
+  MESSAGING_PROVIDER: azure-service-bus
+  REALTIME_PROVIDER: azure-web-pubsub
+  MATCHING_PROVIDER: rule-based
+  CACHE_PROVIDER: memory
+  CORS_ORIGIN: https://replace.example.com
+
