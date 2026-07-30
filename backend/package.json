@@ -44,6 +44,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "jest": "^30.0.5",

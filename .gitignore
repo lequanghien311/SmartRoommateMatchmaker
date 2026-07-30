@@ -15,7 +15,13 @@ dist/
 app-logs-dir/
 docker-logs/
 latest-logs/
+latest-app-logs-dir/
+fresh-logs-dir*/
+latest-debug-logs-dir/
 test-local.js
+test-prod-e2e.js
+test-results/
 build-zip.ps1
 make-clean-backend-zip.ps1
 .DS_Store
+
