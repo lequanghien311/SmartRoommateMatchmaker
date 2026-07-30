@@ -21,6 +21,9 @@
     "validate": "npm run lint && npm run test"
   },
   "dependencies": {
+    "@azure-rest/ai-content-safety": "^1.0.1",
+    "@azure/app-configuration": "^1.12.1",
+    "@azure/search-documents": "^13.0.0",
     "@azure/service-bus": "^7.9.5",
     "@azure/storage-blob": "^12.27.0",
     "@azure/web-pubsub": "^1.1.2",

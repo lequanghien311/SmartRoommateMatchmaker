@@ -47,6 +47,7 @@ app.use('/api/conversations', require('./modules/chat/chat.routes').router);
 app.use('/api/notifications', require('./modules/notifications/notifications.routes').router);
 app.use('/api/reports', require('./modules/reports/reports.routes'));
 app.use('/api/admin', require('./modules/admin/admin.routes'));
+app.use('/api/cloud', require('./modules/cloud/cloud.routes'));
 require('./config/event-handlers')();
 
 const fs = require('fs');
