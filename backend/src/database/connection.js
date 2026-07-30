@@ -1,18 +1,29 @@
 const { Pool } = require('pg');
 const env = require('../config/env');
 
-let databaseUrl = env.databaseUrl;
-if (databaseUrl && databaseUrl.includes('%')) {
+let poolConfig = {
+  connectionString: env.databaseUrl,
+  ssl: env.dbSsl ? { rejectUnauthorized: false } : false,
+  max: 10,
+};
+
+if (env.databaseUrl) {
   try {
-    databaseUrl = decodeURIComponent(databaseUrl);
+    const rawUrl = env.databaseUrl.includes('://') ? env.databaseUrl : `postgresql://${env.databaseUrl}`;
+    const parsed = new URL(rawUrl);
+    poolConfig = {
+      host: parsed.hostname,
+      port: Number(parsed.port || 5432),
+      user: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password),
+      database: parsed.pathname.replace(/^\//, ''),
+      ssl: (env.dbSsl || parsed.searchParams.get('sslmode') === 'require') ? { rejectUnauthorized: false } : false,
+      max: 10,
+    };
   } catch (_) {}
 }
 
-const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: env.dbSsl ? { rejectUnauthorized: false } : false,
-  max: 10,
-});
+const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle PostgreSQL client:', err.message);
