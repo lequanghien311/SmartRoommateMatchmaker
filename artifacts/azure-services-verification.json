@@ -1,19 +1,20 @@
 {
-  "timestamp": "2026-07-30T15:19:46.469Z",
+  "timestamp": "2026-07-30T15:21:46.469Z",
   "environment": "production",
   "appUrl": "https://app-smartroommate-ea.azurewebsites.net",
   "dashboardUrl": "https://app-smartroommate-ea.azurewebsites.net/cloud-services.html",
   "resourceGroup": "rg-smartroommate-eastasia",
   "githubActionsRunId": "30552449349",
-  "gitCommitHash": "86b094d",
+  "gitCommitHash": "4670478",
   "summary": {
     "totalPhysicalAzureResources": 26,
+    "totalCloudServicesForDemo": 22,
     "WORKING": 14,
     "CONFIGURED": 6,
-    "RESOURCE_ONLY": 3,
     "BLOCKED": 2,
-    "FAILED": 0,
-    "NOT_FOUND": 1
+    "RESOURCE_ONLY": 3,
+    "NOT_FOUND": 1,
+    "FAILED": 0
   },
   "runtimeEvidenceEndpoints": {
     "health": "https://app-smartroommate-ea.azurewebsites.net/api/health (HTTP 200)",
