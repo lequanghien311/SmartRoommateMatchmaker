@@ -68,11 +68,34 @@ router.post('/translator/translate', async (req, res) => {
   res.json(result);
 });
 
+// Cache for Vision status result to prevent duplicate Vision API calls on dashboard refresh
+let cachedVisionStatus = null;
+
 // PHA 7: AI Vision image analysis
 router.post('/vision/analyze', async (req, res) => {
-  const imageUrl = req.body?.imageUrl;
-  const result = await vision.analyzeImage(imageUrl);
-  res.json(result);
+  try {
+    const blobName = 'demo-room.jpg'; // Allowlisted demo blob
+    const buffer = await storage.readBuffer(blobName);
+    const result = await vision.analyzeImageBuffer(buffer, 'image/jpeg', blobName);
+    
+    if (result.fallbackUsed === false && result.provider === 'azure-ai-vision') {
+      cachedVisionStatus = {
+        status: 'WORKING',
+        result,
+        checkedAt: new Date().toISOString(),
+      };
+    }
+    res.json(result);
+  } catch (err) {
+    res.json({
+      provider: 'azure-vision-fallback',
+      caption: 'Căn phòng rộng rãi, đầy đủ tiện nghi sinh hoạt.',
+      tags: ['room', 'clean', 'modern'],
+      fallbackUsed: true,
+      error: err.message,
+      checkedAt: new Date().toISOString(),
+    });
+  }
 });
 
 // PHA 8: Azure Maps geocode
@@ -161,13 +184,12 @@ router.get('/services/status', async (_req, res) => {
   const checkedAt = new Date().toISOString();
 
   // Run quick checks for integrated services
-  const [appConfigRes, contentSafetyRes, langRes, transRes, visRes, mapsRes, searchRes, speechRes, storageHealthRes] =
+  const [appConfigRes, contentSafetyRes, langRes, transRes, mapsRes, searchRes, speechRes, storageHealthRes] =
     await Promise.all([
       appConfig.getStatus(),
       contentSafety.analyzeText('Kiểm tra kết nối Content Safety'),
       language.analyzeText('Kiểm tra kết nối Language'),
       translator.translateText('Kiểm tra Translator', 'en'),
-      vision.analyzeImage(),
       maps.geocode('Ho Chi Minh City'),
       search.getStatus(),
       speech.synthesizeText('Kiểm tra Speech'),
@@ -175,6 +197,7 @@ router.get('/services/status', async (_req, res) => {
     ]);
 
   const storageIsWorking = storageHealthRes?.status === 'healthy' && storageHealthRes?.provider === 'azure-blob';
+  const visionIsWorking = cachedVisionStatus?.status === 'WORKING' && cachedVisionStatus?.result?.fallbackUsed === false;
 
   const services = [
     {
@@ -276,9 +299,9 @@ router.get('/services/status', async (_req, res) => {
     {
       service: 'Azure AI Vision',
       resourceName: 'cog-vision-smartroommate',
-      integrationStatus: visRes.provider === 'azure-ai-vision' ? 'WORKING' : 'CONFIGURED',
-      evidenceType: 'Computer Vision Image Captioning & Tagging',
-      message: visRes.provider === 'azure-ai-vision' ? 'Vision analysis active' : 'Fallback vision captioning active',
+      integrationStatus: visionIsWorking ? 'WORKING' : 'CONFIGURED',
+      evidenceType: visionIsWorking ? 'Computer Vision Image Captioning & Tagging (v3.2)' : 'Computer Vision Service Ready (Demo Analysis Required)',
+      message: visionIsWorking ? `Vision active: "${cachedVisionStatus.result.caption}"` : 'Resource provisioned, call POST /api/cloud/vision/analyze to test',
       lastCheckedAt: checkedAt,
     },
     {

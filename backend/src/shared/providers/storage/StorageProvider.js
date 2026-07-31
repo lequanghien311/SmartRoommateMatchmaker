@@ -7,6 +7,10 @@ class StorageProvider {
     throw new Error('StorageProvider.delete chưa được triển khai');
   }
 
+  async readBuffer(_key) {
+    throw new Error('StorageProvider.readBuffer chưa được triển khai');
+  }
+
   async health() {
     throw new Error('StorageProvider.health chưa được triển khai');
   }

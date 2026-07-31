@@ -25,6 +25,12 @@ class LocalStorageProvider extends StorageProvider {
     await fs.rm(target, { force: true });
   }
 
+  async readBuffer(key) {
+    const target = path.resolve(this.rootDirectory, ...key.split('/'));
+    if (!target.startsWith(this.rootDirectory + path.sep)) throw new Error('Đường dẫn lưu trữ không hợp lệ');
+    return await fs.readFile(target);
+  }
+
   async health() {
     await fs.mkdir(this.rootDirectory, { recursive: true });
     await fs.access(this.rootDirectory);

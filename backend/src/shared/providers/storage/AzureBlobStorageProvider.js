@@ -24,6 +24,11 @@ class AzureBlobStorageProvider extends StorageProvider {
     await this.container.deleteBlob(key, { deleteSnapshots: 'include' });
   }
 
+  async readBuffer(key) {
+    const blob = this.container.getBlockBlobClient(key);
+    return await blob.downloadToBuffer();
+  }
+
   async health() {
     await this.container.getProperties();
     return { status: 'healthy', provider: 'azure-blob' };
