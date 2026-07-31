@@ -20,7 +20,9 @@ if (env.databaseUrl) {
       ssl: (env.dbSsl || parsed.searchParams.get('sslmode') === 'require') ? { rejectUnauthorized: false } : false,
       max: 10,
     };
-  } catch (_) {}
+  } catch (_) {
+    // ignore
+  }
 }
 
 const pool = new Pool(poolConfig);

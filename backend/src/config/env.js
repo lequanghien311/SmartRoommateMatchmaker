@@ -23,7 +23,9 @@ const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploa
 if (!fs.existsSync(uploadDir)) {
   try {
     fs.mkdirSync(uploadDir, { recursive: true });
-  } catch (_) {}
+  } catch (_) {
+    // ignore
+  }
 }
 
 const env = {
