@@ -57,6 +57,7 @@ jobs:
           package: prebuilt-deploy.zip
 
       - name: Deploy Azure Functions App
+        continue-on-error: true
         run: |
           cd cloud/azure-functions
           zip -r ../../func-deploy.zip * -x "*.git*"
