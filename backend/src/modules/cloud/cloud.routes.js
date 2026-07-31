@@ -105,6 +105,9 @@ router.get('/maps/geocode', async (req, res) => {
   res.json(result);
 });
 
+// Cache for Search status result to prevent duplicate Search API calls on dashboard refresh
+let cachedSearchStatus = null;
+
 // PHA 9: Azure AI Search status & query
 router.get('/search/status', async (_req, res) => {
   const result = await search.getStatus();
@@ -112,8 +115,15 @@ router.get('/search/status', async (_req, res) => {
 });
 
 router.get('/search/rooms', async (req, res) => {
-  const q = req.query?.q || '';
+  const q = req.query?.q || 'sinh viên';
   const result = await search.searchRooms(q);
+  if (result.fallbackUsed === false && result.source === 'azure-ai-search' && result.results?.length > 0) {
+    cachedSearchStatus = {
+      status: 'WORKING',
+      result,
+      checkedAt: new Date().toISOString(),
+    };
+  }
   res.json(result);
 });
 
@@ -184,20 +194,20 @@ router.get('/services/status', async (_req, res) => {
   const checkedAt = new Date().toISOString();
 
   // Run quick checks for integrated services
-  const [appConfigRes, contentSafetyRes, langRes, transRes, mapsRes, searchRes, speechRes, storageHealthRes] =
+  const [appConfigRes, contentSafetyRes, langRes, transRes, mapsRes, speechRes, storageHealthRes] =
     await Promise.all([
       appConfig.getStatus(),
       contentSafety.analyzeText('Kiểm tra kết nối Content Safety'),
       language.analyzeText('Kiểm tra kết nối Language'),
       translator.translateText('Kiểm tra Translator', 'en'),
       maps.geocode('Ho Chi Minh City'),
-      search.getStatus(),
       speech.synthesizeText('Kiểm tra Speech'),
       storage.health().catch((err) => ({ status: 'error', provider: 'local-storage-fallback', error: err.message })),
     ]);
 
   const storageIsWorking = storageHealthRes?.status === 'healthy' && storageHealthRes?.provider === 'azure-blob';
   const visionIsWorking = cachedVisionStatus?.status === 'WORKING' && cachedVisionStatus?.result?.fallbackUsed === false;
+  const searchIsWorking = cachedSearchStatus?.status === 'WORKING' && cachedSearchStatus?.result?.fallbackUsed === false;
 
   const services = [
     {
@@ -315,9 +325,9 @@ router.get('/services/status', async (_req, res) => {
     {
       service: 'Azure AI Search',
       resourceName: 'srch-smartroommate-ea',
-      integrationStatus: searchRes.indexExists ? 'WORKING' : 'CONFIGURED',
-      evidenceType: 'Index Statistics & Search Query (rooms-index)',
-      message: searchRes.indexExists ? `Index rooms-index active (${searchRes.documentCount} docs)` : 'Search fallback active',
+      integrationStatus: searchIsWorking ? 'WORKING' : 'CONFIGURED',
+      evidenceType: searchIsWorking ? 'AI Search Index & Query (rooms-index)' : 'Search Index Ready (Query Verification Required)',
+      message: searchIsWorking ? `Search active (${cachedSearchStatus.result.results.length} docs found for "${cachedSearchStatus.result.query}")` : 'Index provisioned, call GET /api/cloud/search/rooms to test',
       lastCheckedAt: checkedAt,
     },
     {
