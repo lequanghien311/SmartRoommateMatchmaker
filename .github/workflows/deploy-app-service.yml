@@ -57,10 +57,11 @@ jobs:
           package: prebuilt-deploy.zip
 
       - name: Deploy Azure Functions App
-        uses: Azure/functions-action@v1
-        with:
-          app-name: func-smartroommate-ea
-          package: cloud/azure-functions
+        run: |
+          cd cloud/azure-functions
+          zip -r ../../func-deploy.zip * -x "*.git*"
+          cd ../..
+          az functionapp deployment source config-zip -g rg-smartroommate-eastasia -n func-smartroommate-ea --src func-deploy.zip
 
       - name: Verify Production Health
         run: |
