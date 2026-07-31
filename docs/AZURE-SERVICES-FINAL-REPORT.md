@@ -12,16 +12,18 @@
 
 > [!IMPORTANT]
 > **THÔNG SỐ THỜI GIAN THỰC TRÊN PRODUCTION**  
-> - **Runtime Verified WORKING:** **18 DỊCH VỤ**  
-> - **Thời điểm xác minh gần nhất (Last Verified Timestamp):** `2026-07-31T08:59:27.964Z`  
+> - **Runtime Verified WORKING:** **20 DỊCH VỤ** (Đạt cột mốc 20 dịch vụ Azure hoạt động trực tiếp)  
+> - **Thời điểm xác minh gần nhất (Last Verified Timestamp):** `2026-07-31T15:20:12.588Z`  
 > - **Production Health Status:** `healthy` (`HTTP 200 OK` tại `/api/health`)  
-> - **Commit HEAD hiện tại:** `cc6fab6`  
+> - **Commit HEAD hiện tại:** `94a8a50`  
 
-### Các Commit Tích Hợp Kích Hoạt (4 Dịch Vụ Mới):
+### Các Commit Tích Hợp Kích Hoạt (6 Dịch Vụ Mới):
 - **Azure Blob Storage:** Commit [`6ecfa4a`](https://github.com/lequanghien311/SmartRoommateMatchmaker/commit/6ecfa4a) (*feat(azure): activate azure blob storage provider*) — GitHub Actions Run `30613207120`
 - **Azure AI Vision:** Commit [`3c98ff3`](https://github.com/lequanghien311/SmartRoommateMatchmaker/commit/3c98ff3) (*feat(azure): activate azure ai vision provider via buffer stream*) — GitHub Actions Run `30614150099`
 - **Azure AI Search:** Commit [`f779e68`](https://github.com/lequanghien311/SmartRoommateMatchmaker/commit/f779e68) (*feat(azure): activate azure ai search provider for room indexing and query*) — GitHub Actions Run `30615178417`
-- **Azure Functions:** Commit [`611db3d`](https://github.com/lequanghien311/SmartRoommateMatchmaker/commit/611db3d) (*fix(workflow): deploy azure functions app via azure cli zipdeploy*) — GitHub Actions Run `30616633267` / `30617007361`
+- **Azure Functions:** Commit [`611db3d`](https://github.com/lequanghien311/SmartRoommateMatchmaker/commit/611db3d) (*fix(workflow): deploy azure functions app via azure cli zipdeploy*) — GitHub Actions Run `30616633267`
+- **Azure Service Bus:** Commit [`9c92468`](https://github.com/lequanghien311/SmartRoommateMatchmaker/commit/9c92468) (*feat(azure): complete azure service bus integration*) — GitHub Actions Run `30620102089`
+- **Azure Key Vault:** Commit [`94a8a50`](https://github.com/lequanghien311/SmartRoommateMatchmaker/commit/94a8a50) (*feat(azure): activate azure key vault provider with managed identity secret read verification*) — GitHub Actions Run `30641651370`
 
 ---
 
@@ -44,10 +46,10 @@
 
 | Phân loại Trạng thái | Số lượng | Diễn giải Chi tiết |
 |---|:---:|---|
-| **WORKING** | **18** | Dịch vụ đã tích hợp SDK/code, chạy thực tế trên Production, không dùng fallback (`fallbackUsed = false`) và có Runtime Evidence thành công. |
-| **CONFIGURED** | **3** | Dịch vụ đã cài đặt SDK/Provider sẵn sàng (Azure Service Bus, Azure OpenAI, Azure Notification Hubs), đang chạy chế độ demo/local fallback an toàn. |
-| **BLOCKED** | **2** | Dịch vụ bị vướng điều kiện bên ngoài (Domain Email ACS chưa cấu hình, Model Custom Vision chưa train) — giữ nguyên để tránh phát sinh chi phí. |
-| **RESOURCE_ONLY** | **3** | Tài nguyên hạ tầng độc lập, không gắn trực tiếp trên luồng chạy của Web App (ACR, NSG, Key Vault). |
+| **WORKING** | **20** | Dịch vụ đã tích hợp SDK/code, chạy thực tế trên Production, không dùng fallback (`fallbackUsed = false`) và có Runtime Evidence thành công. |
+| **CONFIGURED** | **1** | Dịch vụ đã cài đặt SDK/Provider sẵn sàng (Azure Notification Hubs), đang chạy chế độ demo fallback an toàn. |
+| **BLOCKED** | **3** | Dịch vụ bị vướng điều kiện bên ngoài (Azure OpenAI blocked by 0 TPM quota, Domain Email ACS chưa cấu hình, Custom Vision chưa train). |
+| **RESOURCE_ONLY** | **2** | Tài nguyên hạ tầng độc lập (ACR, NSG). |
 | **NOT_FOUND** | **1** | Tài nguyên Azure Cache for Redis không tồn tại trong Resource Group (Ghi nhận lại từ kiểm toán cũ). |
 | **TỔNG MỤC DASHBOARD** | **26** | **26 mục theo dõi tích hợp trên Admin Dashboard** |
 
@@ -75,14 +77,14 @@
 | 16 | **Azure AI Speech** | `spch-smartroommate-ea` | Service Type / Instance | **WORKING** | API Speech TTS tổng hợp văn bản thành file âm thanh MP3 buffer (`audio/mpeg`) | `86b094d` |
 | 17 | **Azure Monitor Action Group** | `Application Insights Smart Detection` | Service Type / Instance | **WORKING** | Alert Rule `alert-smartroommate-http5xx` liên kết tới Action Group | `86b094d` |
 | 18 | **Azure Function App** | `func-smartroommate-ea` | Service Type / Instance | **WORKING** | Serverless HTTP trigger `health-check` phản hồi HTTP 200 (`fallbackUsed = false`) | `611db3d` |
-| 19 | **Azure Service Bus** | `sb-smartroommate-ea` | Service Type / Instance | **CONFIGURED** | SDK Provider sẵn sàng, hiện chạy local queue fallback an toàn | Baseline |
-| 20 | **Azure OpenAI** | `oai-smartroommate-ea` | Service Type / Instance | **CONFIGURED** | SDK Provider sẵn sàng, hiện chạy rule-based matching fallback | Baseline |
-| 21 | **Azure Notification Hubs** | `ns-notify-smartroommate/nh-smartroommate` | Service Type / Instance | **CONFIGURED** | Hub Namespace Succeeded (Free SKU), chờ cấu hình FCM/APNS credentials | Baseline |
-| 22 | **ACS Email** | `acs-smartroommate-ea` | Service Type / Instance | **BLOCKED** | Phản hồi BLOCKED do chưa khởi tạo Custom Email Domain trả phí | Baseline |
-| 23 | **Custom Vision Prediction** | `cvis-smartroommate-ea` | Service Type / Instance | **BLOCKED** | Phản hồi BLOCKED do tài nguyên chưa có trained/published model | Baseline |
-| 24 | **Azure Container Registry** | `acrsmartroommateea` | Service Type / Instance | **RESOURCE_ONLY** | Standalone ACR; Web App chạy Node 22 Linux ZIP Deployment | Baseline |
-| 25 | **Network Security Group** | `nsg-smartroommate-ea` | Service Type / Instance | **RESOURCE_ONLY** | Standalone NSG (`subnets: null`), Web App không kết nối VNet | Baseline |
-| 26 | **Azure Key Vault** | `kv-smartroommate-ea` | Service Type / Instance | **RESOURCE_ONLY** | Standalone Key Vault; Web App quản lý biến trực tiếp qua App Settings | Baseline |
+| 19 | **Azure Service Bus** | `sb-smartroommate-ea` | Service Type / Instance | **WORKING** | AMQP 1.0 Event Publishing & PeekLock verification (`fallbackUsed = false`) | `9c92468` |
+| 20 | **Azure Key Vault** | `kv-smartroommate-ea` | Service Type / Instance | **WORKING** | Managed Identity Secret Read (`demo-secret`, `fallbackUsed = false`) | `94a8a50` |
+| 21 | **Azure OpenAI** | `oai-smartroommate-ea` | Service Type / Instance | **BLOCKED** | Trạng thái `BLOCKED_BY_QUOTA`: Hạn mức 0 TPM trên Azure for Students | Baseline |
+| 22 | **Azure Notification Hubs** | `ns-notify-smartroommate/nh-smartroommate` | Service Type / Instance | **CONFIGURED** | Hub Namespace Succeeded (Free SKU), chờ cấu hình FCM/APNS credentials | Baseline |
+| 23 | **ACS Email** | `acs-smartroommate-ea` | Service Type / Instance | **BLOCKED** | Phản hồi BLOCKED do chưa khởi tạo Custom Email Domain trả phí | Baseline |
+| 24 | **Custom Vision Prediction** | `cvis-smartroommate-ea` | Service Type / Instance | **BLOCKED** | Phản hồi BLOCKED do tài nguyên chưa có trained/published model | Baseline |
+| 25 | **Azure Container Registry** | `acrsmartroommateea` | Service Type / Instance | **RESOURCE_ONLY** | Standalone ACR; Web App chạy Node 22 Linux ZIP Deployment | Baseline |
+| 26 | **Network Security Group** | `nsg-smartroommate-ea` | Service Type / Instance | **RESOURCE_ONLY** | Standalone NSG (`subnets: null`), Web App không kết nối VNet | Baseline |
 
 ---
 

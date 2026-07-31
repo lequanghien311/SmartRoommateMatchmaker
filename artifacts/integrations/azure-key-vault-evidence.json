@@ -1,0 +1,37 @@
+{
+  "service": "Azure Key Vault",
+  "resourceName": "kv-smartroommate-ea",
+  "secretName": "demo-secret",
+  "status": "WORKING",
+  "timestamp": "2026-07-31T22:20:30+07:00",
+  "commitHash": "94a8a50",
+  "workflowRunId": 30641651370,
+  "roleAssignmentDetails": {
+    "roleName": "Key Vault Secrets User",
+    "roleDefinitionId": "4633458b-17de-408a-b874-0445c86b69e6",
+    "assignee": "System-assigned Managed Identity (app-smartroommate-ea)",
+    "scope": "/subscriptions/8f0cdbab-66e6-4b0c-a448-5339314fc738/resourceGroups/rg-smartroommate-eastasia/providers/Microsoft.KeyVault/vaults/kv-smartroommate-ea/secrets/demo-secret"
+  },
+  "runtimeEvidence": {
+    "provider": "azure-key-vault",
+    "vaultName": "kv-smartroommate-ea",
+    "secretName": "demo-secret",
+    "retrieved": true,
+    "secretVersionPresent": true,
+    "enabled": true,
+    "authentication": "system-assigned-managed-identity",
+    "httpStatus": 200,
+    "fallbackUsed": false,
+    "checkedAt": "2026-07-31T15:19:52.199Z",
+    "productionDashboardStatus": "WORKING (Count 20)",
+    "dashboardMessage": "Key Vault active (demo-secret)"
+  },
+  "regressionTests": {
+    "apiHealth": "PASS 200",
+    "root": "PASS 200",
+    "roomList": "PASS 200",
+    "roomSearch": "PASS 200",
+    "roomDetail": "PASS 200",
+    "keyVaultReadTest": "PASS 200"
+  }
+}

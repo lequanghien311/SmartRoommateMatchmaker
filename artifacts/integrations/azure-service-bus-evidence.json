@@ -1,0 +1,42 @@
+{
+  "service": "Azure Service Bus",
+  "resourceName": "sb-smartroommate-ea",
+  "queueName": "smart-roommate-events",
+  "status": "WORKING",
+  "timestamp": "2026-07-31T16:38:30+07:00",
+  "commitHash": "9c92468",
+  "workflowRunId": 30620102089,
+  "policyDetails": {
+    "policyName": "SendListenAccessKey",
+    "rights": ["Listen", "Send"],
+    "manageIncluded": false
+  },
+  "runtimeEvidence": {
+    "provider": "azure-service-bus",
+    "queueName": "smart-roommate-events",
+    "messageId": "test-msg-1785490670068-f71s45n",
+    "correlationId": "test-corr-1785490670068-f71s45n",
+    "sent": true,
+    "received": true,
+    "completed": true,
+    "fallbackUsed": false,
+    "checkedAt": "2026-07-31T09:37:50.433Z",
+    "productionDashboardStatus": "WORKING (Count 19)",
+    "dashboardMessage": "Service Bus active (smart-roommate-events)"
+  },
+  "externalQueueVerification": {
+    "activeCountBefore": 0,
+    "activeCountAfter": 0,
+    "deadLetterCountBefore": 0,
+    "deadLetterCountAfter": 0,
+    "source": "Azure CLI Control Plane"
+  },
+  "regressionTests": {
+    "apiHealth": "PASS 200",
+    "root": "PASS 200",
+    "roomList": "PASS 200",
+    "roomSearch": "PASS 200",
+    "roomDetail": "PASS 200",
+    "publishTest": "PASS 200"
+  }
+}
