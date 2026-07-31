@@ -56,6 +56,12 @@ jobs:
           app-name: app-smartroommate-ea
           package: prebuilt-deploy.zip
 
+      - name: Deploy Azure Functions App
+        uses: Azure/functions-action@v1
+        with:
+          app-name: func-smartroommate-ea
+          package: cloud/azure-functions
+
       - name: Verify Production Health
         run: |
           sleep 15

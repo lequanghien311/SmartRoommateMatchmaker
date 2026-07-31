@@ -9,6 +9,7 @@ const AzureVisionProvider = require('../../shared/providers/cloud/AzureVisionPro
 const AzureMapsProvider = require('../../shared/providers/cloud/AzureMapsProvider');
 const AzureSearchProvider = require('../../shared/providers/cloud/AzureSearchProvider');
 const AzureSpeechProvider = require('../../shared/providers/cloud/AzureSpeechProvider');
+const AzureFunctionsProvider = require('../../shared/providers/cloud/AzureFunctionsProvider');
 
 const appConfig = new AzureAppConfigProvider();
 const contentSafety = new AzureContentSafetyProvider();
@@ -18,6 +19,7 @@ const vision = new AzureVisionProvider();
 const maps = new AzureMapsProvider();
 const search = new AzureSearchProvider();
 const speech = new AzureSpeechProvider();
+const functions = new AzureFunctionsProvider();
 const { storage } = require('../media/media.routes');
 
 // Storage status
@@ -102,6 +104,21 @@ router.post('/vision/analyze', async (req, res) => {
 router.get('/maps/geocode', async (req, res) => {
   const query = req.query?.query || 'Quận 1, Hồ Chí Minh';
   const result = await maps.geocode(query);
+  res.json(result);
+});
+
+// Cache for Functions status result to prevent duplicate calls on dashboard refresh
+let cachedFunctionsStatus = null;
+
+router.get('/functions/status', async (_req, res) => {
+  const result = await functions.checkHealth();
+  if (result.fallbackUsed === false && result.provider === 'azure-functions') {
+    cachedFunctionsStatus = {
+      status: 'WORKING',
+      result,
+      checkedAt: new Date().toISOString(),
+    };
+  }
   res.json(result);
 });
 
@@ -208,6 +225,7 @@ router.get('/services/status', async (_req, res) => {
   const storageIsWorking = storageHealthRes?.status === 'healthy' && storageHealthRes?.provider === 'azure-blob';
   const visionIsWorking = cachedVisionStatus?.status === 'WORKING' && cachedVisionStatus?.result?.fallbackUsed === false;
   const searchIsWorking = cachedSearchStatus?.status === 'WORKING' && cachedSearchStatus?.result?.fallbackUsed === false;
+  const functionsIsWorking = cachedFunctionsStatus?.status === 'WORKING' && cachedFunctionsStatus?.result?.fallbackUsed === false;
 
   const services = [
     {
@@ -349,9 +367,9 @@ router.get('/services/status', async (_req, res) => {
     {
       service: 'Azure Function App',
       resourceName: 'func-smartroommate-ea',
-      integrationStatus: 'CONFIGURED',
-      evidenceType: 'Resource Succeeded & HTTP Endpoint Ready',
-      message: 'Serverless function runtime provisioned',
+      integrationStatus: functionsIsWorking ? 'WORKING' : 'CONFIGURED',
+      evidenceType: functionsIsWorking ? 'Serverless HTTP Trigger Invocation (health-check)' : 'Serverless Function Ready (Invocation Required)',
+      message: functionsIsWorking ? `Functions active (${cachedFunctionsStatus.result.data?.service || 'health-check'})` : 'Serverless function runtime provisioned, call GET /api/cloud/functions/status to test',
       lastCheckedAt: checkedAt,
     },
     {
