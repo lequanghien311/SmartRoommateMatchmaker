@@ -18,6 +18,27 @@ const vision = new AzureVisionProvider();
 const maps = new AzureMapsProvider();
 const search = new AzureSearchProvider();
 const speech = new AzureSpeechProvider();
+const { storage } = require('../media/media.routes');
+
+// Storage status
+router.get('/storage/status', async (_req, res) => {
+  try {
+    const health = await storage.health();
+    res.json({
+      status: health.provider === 'azure-blob' ? 'WORKING' : 'CONFIGURED',
+      provider: health.provider,
+      container: process.env.AZURE_STORAGE_CONTAINER || 'room-images',
+      checkedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.json({
+      status: 'CONFIGURED',
+      provider: 'local-storage-fallback',
+      error: err.message,
+      checkedAt: new Date().toISOString(),
+    });
+  }
+});
 
 // PHA 3: App Configuration status
 router.get('/app-configuration/status', async (_req, res) => {
@@ -140,7 +161,7 @@ router.get('/services/status', async (_req, res) => {
   const checkedAt = new Date().toISOString();
 
   // Run quick checks for integrated services
-  const [appConfigRes, contentSafetyRes, langRes, transRes, visRes, mapsRes, searchRes, speechRes] =
+  const [appConfigRes, contentSafetyRes, langRes, transRes, visRes, mapsRes, searchRes, speechRes, storageHealthRes] =
     await Promise.all([
       appConfig.getStatus(),
       contentSafety.analyzeText('Kiểm tra kết nối Content Safety'),
@@ -150,7 +171,10 @@ router.get('/services/status', async (_req, res) => {
       maps.geocode('Ho Chi Minh City'),
       search.getStatus(),
       speech.synthesizeText('Kiểm tra Speech'),
+      storage.health().catch((err) => ({ status: 'error', provider: 'local-storage-fallback', error: err.message })),
     ]);
+
+  const storageIsWorking = storageHealthRes?.status === 'healthy' && storageHealthRes?.provider === 'azure-blob';
 
   const services = [
     {
@@ -180,9 +204,9 @@ router.get('/services/status', async (_req, res) => {
     {
       service: 'Azure Storage Account (Blob)',
       resourceName: 'stsmartroommateea',
-      integrationStatus: 'WORKING',
-      evidenceType: 'Blob Container room-images Active',
-      message: 'Image upload & URL serving active',
+      integrationStatus: storageIsWorking ? 'WORKING' : 'CONFIGURED',
+      evidenceType: storageIsWorking ? 'Azure Storage Blob Container room-images Active' : 'Local Storage Fallback Active',
+      message: storageIsWorking ? 'Blob upload & URL serving active via Azure SDK' : 'Fallback local storage active',
       lastCheckedAt: checkedAt,
     },
     {

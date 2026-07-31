@@ -10,7 +10,8 @@ const MediaRepository = require('./media.repository');
 const MediaService = require('./media.service');
 const MediaController = require('./media.controller');
 
-const storage = env.storageProvider === 'azure'
+const providerName = (env.storageProvider || '').trim().toLowerCase();
+const storage = ['azure', 'azure-blob'].includes(providerName)
   ? new AzureBlobStorageProvider(process.env.AZURE_STORAGE_CONNECTION_STRING, process.env.AZURE_STORAGE_CONTAINER)
   : new LocalStorageProvider(env.uploadDir);
 const controller = new MediaController(new MediaService(new MediaRepository(pool), storage));
