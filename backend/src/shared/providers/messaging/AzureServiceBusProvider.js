@@ -124,9 +124,9 @@ class AzureServiceBusProvider extends MessagingProvider {
         checkedAt: new Date().toISOString(),
       };
     } finally {
-      try { await sender.close(); } catch (_) {}
-      try { await receiver.close(); } catch (_) {}
-      try { await client.close(); } catch (_) {}
+      try { await sender.close(); } catch (_) { /* ignore */ }
+      try { await receiver.close(); } catch (_) { /* ignore */ }
+      try { await client.close(); } catch (_) { /* ignore */ }
     }
   }
 

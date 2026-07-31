@@ -110,13 +110,43 @@ function authView(kind) {
   const login = kind === 'login';
   main().innerHTML = `<section class="auth-shell"><div class="auth-visual"><div><span class="eyebrow" style="color:var(--lime)">SmartRoomie</span><h1>${login ? 'Chào mừng bạn trở lại.' : 'Bắt đầu một chỗ ở mới.'}</h1><p>${login ? 'Những căn phòng và người bạn phù hợp đang chờ.' : 'Tạo hồ sơ trong chưa đầy hai phút.'}</p></div></div>
   <div class="auth-form-wrap"><div class="auth-card"><span class="eyebrow">${login ? 'Đăng nhập' : 'Tạo tài khoản'}</span><h2>${login ? 'Tiếp tục hành trình' : 'Tham gia SmartRoomie'}</h2>
-  ${login ? '<div class="demo-box"><strong>Tài khoản demo:</strong><br>tenant1@smartroommate.vn / Demo@123</div>' : ''}
+  ${login ? `<div class="demo-box">
+    <div class="demo-box-header">⚡ Đăng nhập nhanh Demo (Mật khẩu: Demo@123)</div>
+    <div class="demo-roles-grid">
+      <button type="button" class="demo-role-btn" data-demo-email="tenant1@smartroommate.vn" title="Đăng nhập người thuê 1">
+        <span class="role-icon">👤</span>
+        <div class="role-info"><strong>Người thuê 1</strong><small>tenant1@smartroommate.vn</small></div>
+      </button>
+      <button type="button" class="demo-role-btn" data-demo-email="tenant2@smartroommate.vn" title="Đăng nhập người thuê 2">
+        <span class="role-icon">👤</span>
+        <div class="role-info"><strong>Người thuê 2</strong><small>tenant2@smartroommate.vn</small></div>
+      </button>
+      <button type="button" class="demo-role-btn" data-demo-email="landlord1@smartroommate.vn" title="Đăng nhập chủ trọ">
+        <span class="role-icon">🏠</span>
+        <div class="role-info"><strong>Chủ trọ</strong><small>landlord1@smartroommate.vn</small></div>
+      </button>
+      <button type="button" class="demo-role-btn" data-demo-email="admin@smartroommate.vn" title="Đăng nhập quản trị viên">
+        <span class="role-icon">🛡️</span>
+        <div class="role-info"><strong>Quản trị</strong><small>admin@smartroommate.vn</small></div>
+      </button>
+    </div>
+  </div>` : ''}
   <form id="auth-form">${login ? '' : `<div class="field"><label>Họ và tên</label><input name="fullName" required minlength="2" /></div><div class="field"><label>Số điện thoại</label><input name="phone" required pattern="0[0-9]{9}" /></div>
     <div class="field"><label>Vai trò</label><select name="role"><option value="tenant">Người thuê</option><option value="landlord">Chủ trọ</option></select></div>`}
     <div class="field"><label>Email</label><input name="email" type="email" required /></div>
     <div class="field"><label>Mật khẩu</label><input name="password" type="password" required minlength="8" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" /></div>
     <button class="button">${login ? 'Đăng nhập →' : 'Tạo tài khoản →'}</button>
     <p class="muted">${login ? 'Chưa có tài khoản? <a class="text-link" href="/register" data-link>Đăng ký</a>' : 'Đã có tài khoản? <a class="text-link" href="/login" data-link>Đăng nhập</a>'}</p></form></div></div></section>`;
+  if (login) {
+    document.querySelectorAll('.demo-role-btn').forEach((button) => {
+      button.onclick = () => {
+        const form = document.querySelector('#auth-form');
+        form.elements.email.value = button.dataset.demoEmail;
+        form.elements.password.value = 'Demo@123';
+        form.requestSubmit();
+      };
+    });
+  }
   document.querySelector('#auth-form').onsubmit = async (event) => {
     event.preventDefault();
     const button = event.currentTarget.querySelector('button');

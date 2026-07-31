@@ -17,7 +17,7 @@ export function renderHeader(path = location.pathname) {
     </nav>
     <div class="nav-actions">
       ${user ? `<a href="/notifications" class="button button-secondary button-icon notification-button" data-link aria-label="Thông báo">♢<span class="badge" id="notification-badge">0</span></a>
-        <a href="/profile" class="button button-secondary" data-link>${user.full_name || user.fullName || 'Hồ sơ'}</a>
+        <a href="/profile" class="button button-secondary" data-link>${user.role === 'admin' ? '🛡️ ' : user.role === 'landlord' ? '🏠 ' : '👤 '}${user.full_name || user.fullName || 'Hồ sơ'}</a>
         <button class="button button-small" data-logout>Đăng xuất</button>`
         : '<a href="/login" class="button button-secondary" data-link>Đăng nhập</a><a href="/register" class="button" data-link>Tham gia</a>'}
       <button class="menu-button" aria-label="Mở menu" aria-expanded="false">☰</button>
