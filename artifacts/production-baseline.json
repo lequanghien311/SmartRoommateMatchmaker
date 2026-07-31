@@ -1,0 +1,79 @@
+{
+  "phase": "PHA 0 — BASELINE VÀ ROLLBACK",
+  "timestamp": "2026-07-31T14:28:05+07:00",
+  "auditor": "Senior Azure DevOps Engineer + Node.js Engineer + QA Engineer",
+  "git": {
+    "currentBranch": "main",
+    "currentHeadCommit": "a5bab62",
+    "commitMessage": "docs: refine final report counts and service classification",
+    "rollbackTag": "production-stable-before-six-services",
+    "rollbackCommit": "4670478",
+    "untrackedFiles": [
+      "artifacts/azure-service-reality-audit.json",
+      "artifacts/baseline-before-integration.json",
+      "docs/AZURE-SERVICE-REALITY-AUDIT.md"
+    ]
+  },
+  "deployment": {
+    "workflow": "Deploy Smart Roommate to Azure",
+    "lastSuccessfulRunId": 30556177119,
+    "lastSuccessfulRunCommit": "4670478",
+    "lastSuccessfulRunTimestamp": "2026-07-30T15:20:16Z",
+    "runtime": "Node.js 22 Linux",
+    "deploymentMethod": "GitHub Actions prebuilt Linux ZIP via Azure OIDC",
+    "scmDoBuildDuringDeployment": false,
+    "enableOryxBuild": false
+  },
+  "productionChecks": [
+    {
+      "endpoint": "/",
+      "method": "GET",
+      "status": 200,
+      "responseSnippet": "<!doctype html><html lang=\"vi\">...",
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/health",
+      "method": "GET",
+      "status": 200,
+      "responseSnippet": "{\"success\":true,\"message\":\"Dịch vụ đang hoạt động\",\"data\":{\"status\":\"healthy\",\"service\":\"smart-roommate-api\"}}",
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/rooms",
+      "method": "GET",
+      "status": 200,
+      "responseSnippet": "{\"success\":true,\"message\":\"Lấy danh sách phòng thành công\",\"data\":[{\"id\":\"6c78d8e1-87f0-4b76-b292-badc2b30b21c\"...}]}",
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/rooms?keyword=sinh+viên",
+      "method": "GET",
+      "status": 200,
+      "responseSnippet": "{\"success\":true,\"message\":\"Lấy danh sách phòng thành công\",\"data\":[...]}",
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/rooms/6c78d8e1-87f0-4b76-b292-badc2b30b21c",
+      "method": "GET",
+      "status": 200,
+      "responseSnippet": "{\"success\":true,\"message\":\"Thao tác thành công\",\"data\":{\"id\":\"6c78d8e1-87f0-4b76-b292-badc2b30b21c\"...}}",
+      "result": "PASS"
+    }
+  ],
+  "secretScanning": {
+    "dotEnvTracked": false,
+    "hardcodedSecretsInGit": false,
+    "status": "CLEAN"
+  },
+  "currentWorkingServices": 14,
+  "targetWorkingServices": 20,
+  "prioritySixServices": [
+    "Azure Blob Storage",
+    "Azure AI Vision",
+    "Azure AI Search",
+    "Azure Functions",
+    "Azure Service Bus",
+    "Azure OpenAI"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "service": "Azure Storage Account (Blob Storage)",
+  "resourceName": "stsmartroommateea",
+  "resourceType": "Microsoft.Storage/storageAccounts",
+  "container": "room-images",
+  "status": "WORKING",
+  "timestamp": "2026-07-31T14:39:20+07:00",
+  "commitHash": "6ecfa4a",
+  "workflowRunId": 30613207120,
+  "appSettings": {
+    "STORAGE_PROVIDER": "azure-blob",
+    "AZURE_STORAGE_CONTAINER": "room-images",
+    "AZURE_STORAGE_CONNECTION_STRING": "[PRESENT AND CONFIGURED]"
+  },
+  "runtimeEvidence": {
+    "providerSelected": "AzureBlobStorageProvider",
+    "fallbackUsed": false,
+    "sdkUpload": "SUCCESS via @azure/storage-blob v12.27.0",
+    "uploadedBlobKeySample": "rooms/e7caf032-a167-42bc-8240-200eb4ad79e0.jpg",
+    "seededDemoBlob": "demo-room.jpg",
+    "blobDomain": "stsmartroommateea.blob.core.windows.net",
+    "containerAccess": "Private (PublicAccessNotPermitted enforced per security policy)",
+    "productionDashboardStatus": "WORKING (Count 15)",
+    "healthEndpoint": "HTTP 200 (healthy)"
+  },
+  "regressionTests": {
+    "apiHealth": "PASS 200",
+    "root": "PASS 200",
+    "roomList": "PASS 200",
+    "roomSearch": "PASS 200",
+    "roomDetail": "PASS 200"
+  }
+}

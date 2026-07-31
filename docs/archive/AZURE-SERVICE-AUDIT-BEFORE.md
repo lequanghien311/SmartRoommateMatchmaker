@@ -1,3 +1,9 @@
+> [!WARNING]
+> **TÀI LIỆU ĐÃ ĐƯỢC LƯU TRỮ (ARCHIVED DOCUMENT)**  
+> Tài liệu này mang giá trị lịch sử kiểm toán ban đầu. Để xem trạng thái dịch vụ Azure Cloud hiện hành chính thức (18 WORKING), vui lòng tham chiếu Nguồn Sự Thật Duy Nhất tại: [AZURE-SERVICES-FINAL-REPORT.md](../AZURE-SERVICES-FINAL-REPORT.md).
+
+---
+
 # BÁO CÁO KIỂM TOÁN DỊCH VỤ AZURE (TRƯỚC TÍCH HỢP - PHA 1)
 
 **Dự án:** SmartRoommateMatchmaker  

@@ -1,0 +1,39 @@
+{
+  "service": "Azure Functions",
+  "resourceName": "func-smartroommate-ea",
+  "resourceType": "Microsoft.Web/sites (kind: functionapp, Linux Node 22 Consumption Y1)",
+  "status": "WORKING",
+  "timestamp": "2026-07-31T15:46:00+07:00",
+  "commitHash": "611db3d",
+  "workflowRunId": 30616633267,
+  "functionDetails": {
+    "functionName": "health-check",
+    "triggerType": "HTTP Trigger (GET /api/health-check)",
+    "model": "Node.js v4 Programming Model",
+    "location": "cloud/azure-functions/src/functions/health-check.js"
+  },
+  "runtimeEvidence": {
+    "provider": "azure-functions",
+    "functionName": "health-check",
+    "httpStatus": 200,
+    "requestId": "func-1785487527699",
+    "data": {
+      "service": "smart-roommate-function",
+      "status": "healthy",
+      "timestamp": "2026-07-31T08:45:27.562Z",
+      "environment": "azure-functions-v4"
+    },
+    "fallbackUsed": false,
+    "checkedAt": "2026-07-31T08:45:27.441Z",
+    "productionDashboardStatus": "WORKING (Count 18)",
+    "dashboardMessage": "Functions active (smart-roommate-function)"
+  },
+  "regressionTests": {
+    "apiHealth": "PASS 200",
+    "root": "PASS 200",
+    "roomList": "PASS 200",
+    "roomSearch": "PASS 200",
+    "roomDetail": "PASS 200",
+    "functionsStatus": "PASS 200"
+  }
+}

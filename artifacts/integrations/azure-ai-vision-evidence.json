@@ -1,0 +1,44 @@
+{
+  "service": "Azure AI Vision",
+  "resourceName": "cog-vision-smartroommate",
+  "resourceType": "Microsoft.CognitiveServices/accounts (kind: ComputerVision)",
+  "status": "WORKING",
+  "timestamp": "2026-07-31T14:57:00+07:00",
+  "commitHash": "3c98ff3",
+  "workflowRunId": 30614150099,
+  "appSettings": {
+    "AZURE_VISION_ENDPOINT": "https://cog-vision-smartroommate-84573.cognitiveservices.azure.com/",
+    "AZURE_VISION_KEY": "[PRESENT AND CONFIGURED]"
+  },
+  "runtimeEvidence": {
+    "provider": "azure-ai-vision",
+    "apiVersion": "v3.2",
+    "blobName": "demo-room.jpg",
+    "imageContentType": "image/jpeg",
+    "imageSizeBytes": 7946,
+    "httpStatus": 200,
+    "requestId": "92a9c3fb-8017-4063-abc9-ceed6b8fbd31",
+    "caption": "a plate of food",
+    "tags": [
+      "food",
+      "strawberry",
+      "fruit",
+      "strawberries",
+      "dairy",
+      "berry",
+      "plate",
+      "dishware"
+    ],
+    "fallbackUsed": false,
+    "checkedAt": "2026-07-31T07:56:57.625Z",
+    "productionDashboardStatus": "WORKING (Count 16)",
+    "dashboardMessage": "Vision active: \"a plate of food\""
+  },
+  "regressionTests": {
+    "apiHealth": "PASS 200",
+    "root": "PASS 200",
+    "roomList": "PASS 200",
+    "roomSearch": "PASS 200",
+    "roomDetail": "PASS 200"
+  }
+}

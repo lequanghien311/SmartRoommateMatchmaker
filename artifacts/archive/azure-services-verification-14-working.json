@@ -1,4 +1,6 @@
 {
+  "archived": true,
+  "historicalBaseline": true,
   "timestamp": "2026-07-30T15:21:46.469Z",
   "environment": "production",
   "appUrl": "https://app-smartroommate-ea.azurewebsites.net",

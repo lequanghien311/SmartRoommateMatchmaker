@@ -1,0 +1,44 @@
+{
+  "service": "Azure AI Search",
+  "resourceName": "srch-smartroommate-ea",
+  "resourceType": "Microsoft.Search/searchServices (Free SKU F1)",
+  "status": "WORKING",
+  "timestamp": "2026-07-31T15:18:00+07:00",
+  "commitHash": "f779e68",
+  "workflowRunId": 30615178417,
+  "appSettings": {
+    "AZURE_SEARCH_ENDPOINT": "https://srch-smartroommate-ea.search.windows.net",
+    "AZURE_SEARCH_KEY": "[PRESENT AND CONFIGURED]"
+  },
+  "runtimeEvidence": {
+    "provider": "azure-ai-search",
+    "source": "azure-ai-search",
+    "indexName": "rooms-index",
+    "indexExists": true,
+    "documentCount": 1,
+    "query": "sinh viên",
+    "resultCount": 1,
+    "results": [
+      {
+        "@search.score": 2.51123,
+        "id": "6c78d8e1-87f0-4b76-b292-badc2b30b21c",
+        "title": "Phòng trọ sinh viên tiện nghi số 1",
+        "price": 3500000,
+        "address": "Quận 1, Hồ Chí Minh"
+      }
+    ],
+    "fallbackUsed": false,
+    "checkedAt": "2026-07-31T08:17:06.216Z",
+    "productionDashboardStatus": "WORKING (Count 17)",
+    "dashboardMessage": "Search active (1 docs found for \"sinh viên\")"
+  },
+  "regressionTests": {
+    "apiHealth": "PASS 200",
+    "root": "PASS 200",
+    "roomList": "PASS 200",
+    "roomSearch": "PASS 200",
+    "roomDetail": "PASS 200",
+    "searchStatus": "PASS 200",
+    "searchRooms": "PASS 200"
+  }
+}

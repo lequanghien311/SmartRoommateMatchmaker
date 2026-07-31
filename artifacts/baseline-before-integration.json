@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-07-30T15:27:16.000Z",
+  "phase": "PHA_0_BASELINE_AND_CHECKPOINT",
+  "project": "SmartRoommateMatchmaker",
+  "git": {
+    "branch": "main",
+    "workingTreeStatus": "clean",
+    "localLatestCommit": "a5bab62",
+    "productionDeployedCommit": "4670478b26c05c031be393025ab1423a70b9db44",
+    "rollbackTag": "production-stable-before-cloud-integration-20260730-222716",
+    "recentCommits": [
+      "a5bab62 docs: refine final report counts and service classification",
+      "4670478 docs(cloud): add final audit reports, demo guide and verification json artifact",
+      "86b094d feat(cloud): integrate Azure services providers, endpoints, and admin status dashboard",
+      "7d34a1d chore: checkpoint before azure services integration",
+      "03440b7 fix(db): parse postgres connection params safely to prevent URL decoding issue"
+    ]
+  },
+  "githubActions": {
+    "activeWorkflowsRunning": false,
+    "latestSuccessfulWorkflowRun": {
+      "id": 30556177119,
+      "name": "Deploy Smart Roommate to Azure",
+      "headBranch": "main",
+      "headSha": "4670478b26c05c031be393025ab1423a70b9db44",
+      "status": "completed",
+      "conclusion": "success",
+      "updatedAt": "2026-07-30T15:26:26Z"
+    }
+  },
+  "production": {
+    "targetUrl": "https://app-smartroommate-ea.azurewebsites.net",
+    "healthUrl": "https://app-smartroommate-ea.azurewebsites.net/api/health",
+    "healthStatus": "healthy",
+    "endpoints": {
+      "home": {
+        "name": "HomePage",
+        "url": "https://app-smartroommate-ea.azurewebsites.net/",
+        "status": 200,
+        "durationMs": 287,
+        "ok": true,
+        "responseSnippet": "<!doctype html><html lang=\"vi\">..."
+      },
+      "health": {
+        "name": "HealthCheck",
+        "url": "https://app-smartroommate-ea.azurewebsites.net/api/health",
+        "status": 200,
+        "durationMs": 191,
+        "ok": true,
+        "responseSnippet": "{\"success\":true,\"message\":\"Dịch vụ đang hoạt động\",\"data\":{\"status\":\"healthy\",\"service\":\"smart-roommate-api\",\"time\":\"2026-07-30T15:27:06.214Z\"},\"meta\":{}}"
+      },
+      "login": {
+        "name": "DemoLogin",
+        "url": "https://app-smartroommate-ea.azurewebsites.net/api/auth/login",
+        "status": 200,
+        "durationMs": 1410,
+        "ok": true,
+        "userEmail": "tenant1@smartroommate.vn",
+        "responseSnippet": "{\"success\":true,\"message\":\"Đăng nhập thành công\",\"data\":{\"user\":{\"id\":\"b46bf26e-d1af-47ad-b656-baab12897623\",\"email\":\"tenant1@smartroommate.vn\"...}}"
+      },
+      "roomList": {
+        "name": "RoomList",
+        "url": "https://app-smartroommate-ea.azurewebsites.net/api/rooms",
+        "status": 200,
+        "durationMs": 170,
+        "ok": true,
+        "count": 12,
+        "responseSnippet": "{\"success\":true,\"message\":\"Lấy danh sách phòng thành công\",\"data\":[{\"id\":\"6c78d8e1-87f0-4b76-b292-badc2b30b21c\"...}]}"
+      },
+      "searchRooms": {
+        "name": "SearchRooms",
+        "url": "https://app-smartroommate-ea.azurewebsites.net/api/rooms?search=Ph%C3%B2ng",
+        "status": 200,
+        "durationMs": 86,
+        "ok": true,
+        "count": 12,
+        "responseSnippet": "{\"success\":true,\"message\":\"Lấy danh sách phòng thành công\",\"data\":[...]}"
+      },
+      "roomDetail": {
+        "name": "RoomDetail",
+        "url": "https://app-smartroommate-ea.azurewebsites.net/api/rooms/6c78d8e1-87f0-4b76-b292-badc2b30b21c",
+        "status": 200,
+        "durationMs": 70,
+        "ok": true,
+        "responseSnippet": "{\"success\":true,\"message\":\"Thao tác thành công\",\"data\":{\"id\":\"6c78d8e1-87f0-4b76-b292-badc2b30b21c\",\"title\":\"Phòng trọ sinh viên tiện nghi số 1\"...}}"
+      }
+    }
+  },
+  "secretScan": {
+    "dotenvTrackedInGit": false,
+    "hardcodedSecretMatchesCount": 0,
+    "exampleTemplateMatchesOnly": true
+  }
+}

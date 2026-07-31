@@ -1,32 +1,60 @@
 {
-  "timestamp": "2026-07-30T15:21:46.469Z",
+  "timestamp": "2026-07-31T08:59:27.964Z",
   "environment": "production",
   "appUrl": "https://app-smartroommate-ea.azurewebsites.net",
   "dashboardUrl": "https://app-smartroommate-ea.azurewebsites.net/cloud-services.html",
   "resourceGroup": "rg-smartroommate-eastasia",
-  "githubActionsRunId": "30552449349",
-  "gitCommitHash": "4670478",
+  "gitCommitHash": "611db3d",
   "summary": {
     "totalPhysicalAzureResources": 26,
     "totalCloudServicesForDemo": 22,
-    "WORKING": 14,
-    "CONFIGURED": 6,
+    "WORKING": 18,
+    "CONFIGURED": 3,
     "BLOCKED": 2,
     "RESOURCE_ONLY": 3,
     "NOT_FOUND": 1,
     "FAILED": 0
   },
-  "runtimeEvidenceEndpoints": {
-    "health": "https://app-smartroommate-ea.azurewebsites.net/api/health (HTTP 200)",
-    "cloudServicesDashboard": "https://app-smartroommate-ea.azurewebsites.net/cloud-services.html (HTTP 200)",
-    "cloudServicesStatus": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/services/status (HTTP 200)",
-    "appConfiguration": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/app-configuration/status",
-    "contentSafety": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/content-safety/test",
-    "language": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/language/analyze",
-    "translator": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/translator/translate",
-    "maps": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/maps/geocode",
-    "speech": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/speech/synthesize",
-    "searchStatus": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/search/status",
-    "monitorStatus": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/monitor/status"
+  "runtimeEvidence": {
+    "healthCheck": {
+      "endpoint": "https://app-smartroommate-ea.azurewebsites.net/api/health",
+      "httpStatus": 200,
+      "service": "smart-roommate-api",
+      "status": "healthy"
+    },
+    "blobStorage": {
+      "endpoint": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/storage/status",
+      "provider": "azure-blob",
+      "container": "room-images",
+      "status": "WORKING",
+      "fallbackUsed": false,
+      "commitHash": "6ecfa4a"
+    },
+    "aiVision": {
+      "endpoint": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/vision/analyze",
+      "provider": "azure-ai-vision",
+      "httpStatus": 200,
+      "caption": "a plate of food",
+      "fallbackUsed": false,
+      "commitHash": "3c98ff3"
+    },
+    "aiSearch": {
+      "endpoint": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/search/rooms?q=sinh%20vi%C3%AAn",
+      "provider": "azure-ai-search",
+      "indexName": "rooms-index",
+      "resultCount": 1,
+      "searchScore": 2.51123,
+      "fallbackUsed": false,
+      "commitHash": "f779e68"
+    },
+    "azureFunctions": {
+      "directEndpoint": "https://func-smartroommate-ea.azurewebsites.net/api/health-check",
+      "statusEndpoint": "https://app-smartroommate-ea.azurewebsites.net/api/cloud/functions/status",
+      "provider": "azure-functions",
+      "httpStatus": 200,
+      "service": "smart-roommate-function",
+      "fallbackUsed": false,
+      "commitHash": "611db3d"
+    }
   }
 }
