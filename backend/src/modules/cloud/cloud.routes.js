@@ -10,6 +10,8 @@ const AzureMapsProvider = require('../../shared/providers/cloud/AzureMapsProvide
 const AzureSearchProvider = require('../../shared/providers/cloud/AzureSearchProvider');
 const AzureSpeechProvider = require('../../shared/providers/cloud/AzureSpeechProvider');
 const AzureFunctionsProvider = require('../../shared/providers/cloud/AzureFunctionsProvider');
+const AzureServiceBusProvider = require('../../shared/providers/messaging/AzureServiceBusProvider');
+const { authenticate, authorize } = require('../../shared/middlewares/auth');
 
 const appConfig = new AzureAppConfigProvider();
 const contentSafety = new AzureContentSafetyProvider();
@@ -20,6 +22,7 @@ const maps = new AzureMapsProvider();
 const search = new AzureSearchProvider();
 const speech = new AzureSpeechProvider();
 const functions = new AzureFunctionsProvider();
+const serviceBus = new AzureServiceBusProvider();
 const { storage } = require('../media/media.routes');
 
 // Storage status
@@ -105,6 +108,57 @@ router.get('/maps/geocode', async (req, res) => {
   const query = req.query?.query || 'Quận 1, Hồ Chí Minh';
   const result = await maps.geocode(query);
   res.json(result);
+});
+
+// Cache for Service Bus status result
+let isPublishTestRunning = false;
+let cachedServiceBusStatus = null;
+
+router.get('/service-bus/status', async (_req, res) => {
+  const result = await serviceBus.health();
+  res.json(result);
+});
+
+router.post('/service-bus/publish-test', authenticate, authorize('admin'), async (_req, res) => {
+  if (isPublishTestRunning) {
+    return res.status(429).json({
+      status: 'error',
+      message: 'Bài test Service Bus đang chạy, vui lòng chờ trong giây lát',
+    });
+  }
+
+  isPublishTestRunning = true;
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Overall timeout for Service Bus publish-test exceeded (15s)')), 15000)
+  );
+
+  try {
+    const result = await Promise.race([
+      serviceBus.publishAndVerifyTestMessage(),
+      timeoutPromise,
+    ]);
+
+    if (result.fallbackUsed === false && result.sent === true && result.received === true && result.completed === true) {
+      cachedServiceBusStatus = {
+        status: 'WORKING',
+        result,
+        checkedAt: new Date().toISOString(),
+      };
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      provider: 'azure-service-bus-fallback',
+      sent: false,
+      received: false,
+      completed: false,
+      fallbackUsed: true,
+      error: err.message,
+      checkedAt: new Date().toISOString(),
+    });
+  } finally {
+    isPublishTestRunning = false;
+  }
 });
 
 // Cache for Functions status result to prevent duplicate calls on dashboard refresh
@@ -226,6 +280,7 @@ router.get('/services/status', async (_req, res) => {
   const visionIsWorking = cachedVisionStatus?.status === 'WORKING' && cachedVisionStatus?.result?.fallbackUsed === false;
   const searchIsWorking = cachedSearchStatus?.status === 'WORKING' && cachedSearchStatus?.result?.fallbackUsed === false;
   const functionsIsWorking = cachedFunctionsStatus?.status === 'WORKING' && cachedFunctionsStatus?.result?.fallbackUsed === false;
+  const serviceBusIsWorking = cachedServiceBusStatus?.status === 'WORKING' && cachedServiceBusStatus?.result?.fallbackUsed === false;
 
   const services = [
     {
@@ -375,9 +430,9 @@ router.get('/services/status', async (_req, res) => {
     {
       service: 'Azure Service Bus',
       resourceName: 'sb-smartroommate-ea',
-      integrationStatus: 'CONFIGURED',
-      evidenceType: 'SDK Provider Implemented (Local Messaging Active)',
-      message: 'Queue provider ready, local fallback active',
+      integrationStatus: serviceBusIsWorking ? 'WORKING' : 'CONFIGURED',
+      evidenceType: serviceBusIsWorking ? 'AMQP 1.0 Event Publishing & PeekLock Verification' : 'Queue Provider Ready (Publish Verification Required)',
+      message: serviceBusIsWorking ? `Service Bus active (${cachedServiceBusStatus.result.queueName})` : 'Queue provider ready, call POST /api/cloud/service-bus/publish-test to test',
       lastCheckedAt: checkedAt,
     },
     {
