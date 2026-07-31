@@ -11,6 +11,7 @@ const AzureSearchProvider = require('../../shared/providers/cloud/AzureSearchPro
 const AzureSpeechProvider = require('../../shared/providers/cloud/AzureSpeechProvider');
 const AzureFunctionsProvider = require('../../shared/providers/cloud/AzureFunctionsProvider');
 const AzureServiceBusProvider = require('../../shared/providers/messaging/AzureServiceBusProvider');
+const AzureKeyVaultProvider = require('../../shared/providers/cloud/AzureKeyVaultProvider');
 const { authenticate, authorize } = require('../../shared/middlewares/auth');
 
 const appConfig = new AzureAppConfigProvider();
@@ -23,6 +24,7 @@ const search = new AzureSearchProvider();
 const speech = new AzureSpeechProvider();
 const functions = new AzureFunctionsProvider();
 const serviceBus = new AzureServiceBusProvider();
+const keyVault = new AzureKeyVaultProvider();
 const { storage } = require('../media/media.routes');
 
 // Storage status
@@ -107,6 +109,26 @@ router.post('/vision/analyze', async (req, res) => {
 router.get('/maps/geocode', async (req, res) => {
   const query = req.query?.query || 'Quận 1, Hồ Chí Minh';
   const result = await maps.geocode(query);
+  res.json(result);
+});
+
+// Cache for Key Vault status result
+let cachedKeyVaultStatus = null;
+
+router.get('/keyvault/status', async (_req, res) => {
+  const result = await keyVault.health();
+  res.json(result);
+});
+
+router.post('/keyvault/read-test', authenticate, authorize('admin'), async (_req, res) => {
+  const result = await keyVault.readSecretTest('demo-secret');
+  if (result.fallbackUsed === false && result.retrieved === true && result.httpStatus === 200) {
+    cachedKeyVaultStatus = {
+      status: 'WORKING',
+      result,
+      checkedAt: new Date().toISOString(),
+    };
+  }
   res.json(result);
 });
 
@@ -281,6 +303,7 @@ router.get('/services/status', async (_req, res) => {
   const searchIsWorking = cachedSearchStatus?.status === 'WORKING' && cachedSearchStatus?.result?.fallbackUsed === false;
   const functionsIsWorking = cachedFunctionsStatus?.status === 'WORKING' && cachedFunctionsStatus?.result?.fallbackUsed === false;
   const serviceBusIsWorking = cachedServiceBusStatus?.status === 'WORKING' && cachedServiceBusStatus?.result?.fallbackUsed === false;
+  const keyVaultIsWorking = cachedKeyVaultStatus?.status === 'WORKING' && cachedKeyVaultStatus?.result?.fallbackUsed === false;
 
   const services = [
     {
@@ -486,9 +509,9 @@ router.get('/services/status', async (_req, res) => {
     {
       service: 'Azure Key Vault',
       resourceName: 'kv-smartroommate-ea',
-      integrationStatus: 'RESOURCE_ONLY',
-      evidenceType: 'Key Vault Resource Succeeded',
-      message: 'Secrets managed directly via App Settings',
+      integrationStatus: keyVaultIsWorking ? 'WORKING' : 'CONFIGURED',
+      evidenceType: keyVaultIsWorking ? 'Managed Identity Secret Read (demo-secret)' : 'Key Vault Resource Ready (Read Verification Required)',
+      message: keyVaultIsWorking ? `Key Vault active (${cachedKeyVaultStatus.result.secretName})` : 'Secrets managed directly via App Settings, call POST /api/cloud/keyvault/read-test to test',
       lastCheckedAt: checkedAt,
     },
   ];
