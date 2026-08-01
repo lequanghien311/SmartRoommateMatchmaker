@@ -28,6 +28,7 @@ const upload = multer({
   },
 });
 const router = express.Router();
+router.get('/images/:imageId/content', controller.content);
 router.use(authenticate, authorize('landlord', 'admin'));
 router.post('/rooms/:roomId/images', upload.array('images', 10), controller.upload);
 router.get('/images/:imageId/vision', controller.vision);

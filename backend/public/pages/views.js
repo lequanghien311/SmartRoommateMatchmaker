@@ -85,7 +85,7 @@ export async function roomDetail(id) {
     const { data: room } = await roomService.detail(id);
     const images = room.images || [];
     const gallery = Array.from({ length: 3 }, (_, index) => images[index]
-      ? `<div><img src="${escapeHtml(images[index].url)}" alt="${escapeHtml(room.title)} - ảnh ${index + 1}" /></div>`
+      ? `<div><img src="/api/media/images/${images[index].id}/content" alt="${escapeHtml(room.title)} - ảnh ${index + 1}" /></div>`
       : '<div class="room-placeholder">SmartRoomie</div>').join('');
     document.querySelector('#room-detail').className = 'detail-grid';
     document.querySelector('#room-detail').innerHTML = `<div><div class="gallery">${gallery}</div><article class="panel detail-panel">
@@ -268,6 +268,8 @@ function renderVisionEvidence(result) {
   if (!result) return '<p class="muted">Chưa có kết quả Vision.</p>';
   const verified = result.provider === 'azure-ai-vision' && result.fallbackUsed === false;
   return `<div class="azure-evidence ${verified ? 'verified' : 'failed'}">
+    <strong>${result.storageProvider === 'azure-blob' && result.storageFallbackUsed === false ? 'Azure Blob Storage verified' : 'Storage chưa được xác minh'}</strong>
+    <span>provider=${escapeHtml(result.storageProvider || 'unknown')} · fallbackUsed=${String(result.storageFallbackUsed)}</span>
     <strong>${verified ? 'Azure AI Vision verified' : 'Vision chưa được xác minh'}</strong>
     <span>provider=${escapeHtml(result.provider || 'unknown')} · fallbackUsed=${String(result.fallbackUsed)}</span>
     <p>${escapeHtml(result.caption || result.error || 'Không có caption')}</p>
@@ -283,7 +285,7 @@ async function loadVisionEvidence(room) {
     return;
   }
   gallery.innerHTML = room.images.map((image) => `<article class="panel managed-image" data-managed-image="${image.id}">
-    <img src="${escapeHtml(image.url)}" alt="Ảnh phòng" />
+    <img src="/api/media/images/${image.id}/content" alt="Ảnh phòng" />
     <div><p class="muted">Đang phân tích bằng Azure AI Vision…</p></div>
   </article>`).join('');
   await Promise.all(room.images.map(async (image) => {

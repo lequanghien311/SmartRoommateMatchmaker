@@ -18,6 +18,7 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:'],
+        mediaSrc: ["'self'", 'blob:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
         scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
