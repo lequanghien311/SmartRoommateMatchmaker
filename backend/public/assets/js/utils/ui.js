@@ -51,9 +51,9 @@ export function roomCard(room) {
     </div>
     <div class="room-body"><div class="room-meta"><span>⌖ ${escapeHtml(room.district)}</span><span>□ ${room.area} m²</span><span>◎ ${room.max_occupants || room.maxOccupants} người</span></div>
     <h3><a href="/rooms/${room.id}" data-link>${escapeHtml(room.title)}</a></h3>
-    <p class="muted">${escapeHtml(room.description).slice(0, 92)}…</p>
     <div class="price-row"><span class="price">${money(room.monthly_price || room.monthlyPrice)}đ <small>/ tháng</small></span>
-    <span class="pill">${room.room_type || room.roomType}</span></div></div>
+    <span class="pill">${room.room_type || room.roomType}</span>
+    ${room['@search.score'] ? `<span class="pill" style="background:#e0f2fe;color:#0369a1;border:0;" title="Điểm phù hợp từ Azure AI Search">🔍 ${Number(room['@search.score']).toFixed(2)}</span>` : ''}</div></div>
   </article>`;
 }
 

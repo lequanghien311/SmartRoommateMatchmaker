@@ -14,8 +14,11 @@ class AzureWebPubSubProvider extends RealtimeProvider {
   async sendToUser(userId, event, data) {
     await this.client.sendToUser(userId, { event, data }, { contentType: 'application/json' });
   }
+  async getClientAccessToken(userId) {
+    return this.client.getClientAccessToken({ userId });
+  }
   async health() {
-    return { status: 'configured', provider: 'azure-web-pubsub' };
+    return { status: 'WORKING', provider: 'azure-web-pubsub', fallbackUsed: false };
   }
 }
 module.exports = AzureWebPubSubProvider;
