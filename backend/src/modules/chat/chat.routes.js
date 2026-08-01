@@ -18,9 +18,10 @@ const realtime = env.realtimeProvider === 'azure-web-pubsub'
 const repository = new Repository(pool, transaction);
 const service = new Service(repository, realtime, messaging, notifications);
 const controller = new Controller(service);
+
 const router = express.Router();
 router.use(authenticate);
-router.get('/', controller.list);
+
 router.get('/pubsub-token', async (req, res, next) => {
   try {
     const cs = process.env.AZURE_WEB_PUBSUB_CONNECTION_STRING;
@@ -33,6 +34,8 @@ router.get('/pubsub-token', async (req, res, next) => {
     next(err);
   }
 });
+
+router.get('/', controller.list);
 router.post('/', controller.create);
 router.get('/:id/messages', controller.messages);
 router.post('/:id/messages', controller.send);
