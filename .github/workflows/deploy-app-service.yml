@@ -28,6 +28,15 @@ jobs:
         working-directory: backend
         run: npm ci --omit=dev
 
+      - name: Verify production runtime dependencies
+        working-directory: backend
+        run: |
+          node -e "require('express'); require('@opentelemetry/api-logs'); require('applicationinsights'); console.log('runtime dependencies OK')"
+          npm ls express @opentelemetry/api-logs applicationinsights
+          test -f node_modules/express/package.json
+          test -f node_modules/applicationinsights/package.json
+          test -f node_modules/@opentelemetry/api-logs/package.json
+
       - name: Verify local health endpoint
         working-directory: backend
         run: |
@@ -43,6 +52,16 @@ jobs:
           mkdir -p uploads public
           zip -r ../prebuilt-deploy.zip package.json package-lock.json src public uploads node_modules -x "*.env*" -x "*tests*" -x "*coverage*" -x "*logs*"
 
+      - name: Verify deployment artifact contents
+        run: |
+          unzip -l prebuilt-deploy.zip | grep -E 'package.json|package-lock.json|src/server.js|node_modules/(express|applicationinsights)/|node_modules/@opentelemetry/api-logs/'
+          unzip -Z1 prebuilt-deploy.zip | grep -Fx 'package.json'
+          unzip -Z1 prebuilt-deploy.zip | grep -Fx 'package-lock.json'
+          unzip -Z1 prebuilt-deploy.zip | grep -Fx 'src/server.js'
+          unzip -Z1 prebuilt-deploy.zip | grep -Fx 'node_modules/express/package.json'
+          unzip -Z1 prebuilt-deploy.zip | grep -Fx 'node_modules/applicationinsights/package.json'
+          unzip -Z1 prebuilt-deploy.zip | grep -Fx 'node_modules/@opentelemetry/api-logs/package.json'
+
       - name: Azure Login via OIDC
         uses: azure/login@v2
         with:
@@ -55,6 +74,7 @@ jobs:
         with:
           app-name: app-smartroommate-ea
           package: prebuilt-deploy.zip
+          clean: true
 
       - name: Deploy Azure Functions App
         continue-on-error: true
