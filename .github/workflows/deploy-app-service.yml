@@ -39,9 +39,8 @@ jobs:
 
       - name: Package prebuilt Linux artifact
         run: |
-          mkdir -p backend/public backend/uploads
-          cp -r frontend/* backend/public/
           cd backend
+          mkdir -p uploads public
           zip -r ../prebuilt-deploy.zip package.json package-lock.json src public uploads node_modules -x "*.env*" -x "*tests*" -x "*coverage*" -x "*logs*"
 
       - name: Azure Login via OIDC

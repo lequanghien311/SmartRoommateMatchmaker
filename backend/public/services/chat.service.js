@@ -17,7 +17,6 @@ export const chatService = {
       const res = await this.getPubSubToken();
       if (res.success && res.data?.url) {
         pubsubSocket = new WebSocket(res.data.url, 'json.webpubsub.azure.v1');
-        pubsubSocket.provider = 'azure-web-pubsub';
         pubsubSocket.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
@@ -30,7 +29,6 @@ export const chatService = {
 
     if (window.io && !socket) {
       socket = window.io({ auth: { token: state.token } });
-      socket.provider = 'socketio';
       socket.off('message:new').on('message:new', (message) => handlers.onMessage?.(message));
       socket.off('message:deleted').on('message:deleted', (message) => handlers.onDelete?.(message));
       socket.off('typing').on('typing', (event) => handlers.onTyping?.(event));
