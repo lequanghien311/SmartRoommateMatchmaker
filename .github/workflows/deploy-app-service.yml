@@ -50,7 +50,7 @@ jobs:
         run: |
           cd backend
           mkdir -p uploads public
-          zip -r ../prebuilt-deploy.zip package.json package-lock.json src public uploads node_modules -x "*.env*" -x "*tests*" -x "*coverage*" -x "*logs*"
+          zip -r ../prebuilt-deploy.zip package.json package-lock.json src public uploads node_modules -x "*.env*" -x "*tests*" -x "*coverage*"
 
       - name: Verify deployment artifact contents
         run: |
