@@ -13,6 +13,7 @@ const routes = [
   [/^\/register$/, () => views.register()],
   [/^\/rooms$/, () => views.rooms()],
   [/^\/rooms\/new$/, () => views.roomForm()],
+  [/^\/rooms\/([0-9a-f-]+)\/edit$/, (match) => views.roomForm(match[1])],
   [/^\/rooms\/([0-9a-f-]+)$/, (match) => views.roomDetail(match[1])],
   [/^\/landlord\/rooms$/, () => views.landlordRooms()],
   [/^\/favorites$/, () => views.favorites()],

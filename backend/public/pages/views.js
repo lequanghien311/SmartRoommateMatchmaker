@@ -200,28 +200,98 @@ export async function landlordRooms() {
   main().innerHTML = `${pageShell('Quản lý tin đăng')}<section class="container layout-sidebar">${sidebar('/landlord/rooms')}<div><div class="section-heading"><div><h2>Tin của tôi</h2><p class="muted">Theo dõi trạng thái, lượt xem và yêu thích.</p></div><a href="/rooms/new" class="button" data-link>+ Đăng phòng</a></div><div id="mine">${loadingCards(3)}</div></div></section>`;
   try {
     const result = await roomService.mine();
-    document.querySelector('#mine').innerHTML = result.data.length ? `<div class="room-grid">${result.data.map(roomCard).join('')}</div>` : emptyState('Chưa có tin đăng', 'Tạo bản nháp đầu tiên của bạn.', '<a class="button" href="/rooms/new" data-link>Đăng phòng</a>');
+    document.querySelector('#mine').innerHTML = result.data.length ? `<div class="room-grid">${result.data.map((room) => roomCard(room, `<div style="margin-top:14px"><a class="button button-secondary button-small" href="/rooms/${room.id}/edit" data-link>Chỉnh sửa & dịch vụ Azure</a></div>`)).join('')}</div>` : emptyState('Chưa có tin đăng', 'Tạo bản nháp đầu tiên của bạn.', '<a class="button" href="/rooms/new" data-link>Đăng phòng</a>');
   } catch (error) { document.querySelector('#mine').innerHTML = errorState(error.message); }
 }
 
-export async function roomForm() {
+function renderVisionEvidence(result) {
+  if (!result) return '<p class="muted">Chưa có kết quả Vision.</p>';
+  const verified = result.provider === 'azure-ai-vision' && result.fallbackUsed === false;
+  return `<div class="azure-evidence ${verified ? 'verified' : 'failed'}">
+    <strong>${verified ? 'Azure AI Vision verified' : 'Vision chưa được xác minh'}</strong>
+    <span>provider=${escapeHtml(result.provider || 'unknown')} · fallbackUsed=${String(result.fallbackUsed)}</span>
+    <p>${escapeHtml(result.caption || result.error || 'Không có caption')}</p>
+    <div class="tag-list">${(result.tags || []).map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join('')}</div>
+  </div>`;
+}
+
+async function loadVisionEvidence(room) {
+  const gallery = document.querySelector('#manage-images');
+  if (!gallery) return;
+  if (!room.images?.length) {
+    gallery.innerHTML = emptyState('Chưa có ảnh', 'Chọn ảnh JPEG, PNG hoặc WebP để tải lên Azure Blob Storage.');
+    return;
+  }
+  gallery.innerHTML = room.images.map((image) => `<article class="panel managed-image" data-managed-image="${image.id}">
+    <img src="${escapeHtml(image.url)}" alt="Ảnh phòng" />
+    <div><p class="muted">Đang phân tích bằng Azure AI Vision…</p></div>
+  </article>`).join('');
+  await Promise.all(room.images.map(async (image) => {
+    const target = document.querySelector(`[data-managed-image="${image.id}"] > div`);
+    try {
+      const { data } = await roomService.analyzeImage(image.id);
+      if (target) target.innerHTML = renderVisionEvidence(data);
+    } catch (error) {
+      if (target) target.innerHTML = renderVisionEvidence({ provider: 'unavailable', fallbackUsed: true, error: error.message });
+    }
+  }));
+}
+
+export async function roomForm(id) {
   if (!requireRole('landlord')) return;
-  main().innerHTML = `${pageShell('Đăng phòng mới', 'Thông tin rõ ràng giúp tin được duyệt nhanh hơn.')}<section class="container layout-sidebar">${sidebar('/rooms/new')}
-  <form class="panel detail-panel form-grid" id="room-form"><div class="field field-full"><label>Tiêu đề</label><input name="title" required maxlength="180" /></div>
-  <div class="field field-full"><label>Mô tả (ít nhất 20 ký tự)</label><textarea name="description" required minlength="20"></textarea></div>
-  <div class="field"><label>Giá thuê/tháng</label><input name="monthlyPrice" type="number" min="1" required /></div><div class="field"><label>Tiền cọc</label><input name="deposit" type="number" min="0" value="0" /></div>
-  <div class="field"><label>Diện tích (m²)</label><input name="area" type="number" min="1" required /></div><div class="field"><label>Loại phòng</label><select name="roomType"><option value="private">Phòng riêng</option><option value="studio">Studio</option><option value="dorm">Ký túc xá</option></select></div>
-  <div class="field field-full"><label>Địa chỉ</label><input name="address" required /></div><div class="field"><label>Tỉnh/thành phố</label><input name="province" value="TP. Hồ Chí Minh" required /></div><div class="field"><label>Quận/huyện</label><input name="district" required /></div>
-  <div class="field"><label>Phường/xã</label><input name="ward" /></div><div class="field"><label>Số người tối đa</label><input name="maxOccupants" type="number" min="1" value="2" /></div>
-  <div class="field"><label>Số phòng còn lại</label><input name="availableRooms" type="number" min="0" value="1" /></div><div class="field"><label><input name="allowsPets" type="checkbox" style="width:auto;min-height:auto" /> Cho phép thú cưng</label></div>
-  <div class="form-actions"><button class="button button-secondary" type="button" data-link-back>Hủy</button><button class="button">Lưu bản nháp</button></div></form></section>`;
+  let room = null;
+  if (id) {
+    try { room = (await roomService.manage(id)).data; } catch (error) { main().innerHTML = errorState(error.message); return; }
+  }
+  const value = (field, fallback = '') => escapeHtml(room?.[field] ?? fallback);
+  main().innerHTML = `${pageShell(id ? 'Chỉnh sửa phòng' : 'Đăng phòng mới', 'Lưu bản nháp, xác minh vị trí và hoàn thiện ảnh trước khi gửi duyệt.')}<section class="container layout-sidebar">${sidebar('/rooms/new')}<div>
+  <form class="panel detail-panel form-grid" id="room-form"><div class="field field-full"><label>Tiêu đề</label><input name="title" value="${value('title')}" required maxlength="180" /></div>
+  <div class="field field-full"><label>Mô tả (ít nhất 20 ký tự)</label><textarea name="description" required minlength="20">${value('description')}</textarea></div>
+  <div class="field"><label>Giá thuê/tháng</label><input name="monthlyPrice" type="number" min="1" value="${value('monthly_price')}" required /></div><div class="field"><label>Tiền cọc</label><input name="deposit" type="number" min="0" value="${value('deposit', 0)}" /></div>
+  <div class="field"><label>Diện tích (m²)</label><input name="area" type="number" min="1" value="${value('area')}" required /></div><div class="field"><label>Loại phòng</label><select name="roomType"><option value="private">Phòng riêng</option><option value="studio">Studio</option><option value="dorm">Ký túc xá</option></select></div>
+  <div class="field field-full"><label>Địa chỉ</label><input name="address" value="${value('address')}" required /></div><div class="field"><label>Tỉnh/thành phố</label><input name="province" value="${value('province', 'TP. Hồ Chí Minh')}" required /></div><div class="field"><label>Quận/huyện</label><input name="district" value="${value('district')}" required /></div>
+  <div class="field"><label>Phường/xã</label><input name="ward" value="${value('ward')}" /></div><div class="field"><label>Số người tối đa</label><input name="maxOccupants" type="number" min="1" value="${value('max_occupants', 2)}" /></div>
+  <div class="field"><label>Số phòng còn lại</label><input name="availableRooms" type="number" min="0" value="${value('available_rooms', 1)}" /></div><div class="field"><label><input name="allowsPets" type="checkbox" style="width:auto;min-height:auto" ${room?.allows_pets ? 'checked' : ''} /> Cho phép thú cưng</label></div>
+  <div class="form-actions"><button class="button button-secondary" type="button" data-link-back>Hủy</button><button class="button">${id ? 'Cập nhật bản nháp' : 'Lưu bản nháp'}</button></div></form>
+  ${id ? `<section class="panel detail-panel" style="margin-top:20px"><span class="eyebrow">Azure Blob Storage + AI Vision</span><h2>Ảnh phòng</h2>
+    <form id="image-upload-form" class="form-grid"><div class="field field-full"><label>Chọn ảnh</label><input type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple required /></div><div class="form-actions"><button class="button">Tải lên & phân tích</button></div></form>
+    <div id="manage-images" class="managed-images" style="margin-top:20px"></div></section>` : ''}
+  </div></section>`;
+  document.querySelector('[name="roomType"]').value = room?.room_type || 'private';
   document.querySelector('#room-form').onsubmit = async (event) => {
     event.preventDefault();
     const input = Object.fromEntries(new FormData(event.currentTarget));
     for (const key of ['monthlyPrice', 'deposit', 'area', 'maxOccupants', 'availableRooms']) input[key] = Number(input[key]);
     input.allowsPets = event.currentTarget.allowsPets.checked;
-    try { await roomService.create(input); toast('Đã tạo bản nháp'); history.pushState({}, '', '/landlord/rooms'); window.dispatchEvent(new PopStateEvent('popstate')); } catch (error) { toast(error.message, 'error'); }
+    try {
+      const result = id ? await roomService.update(id, input) : await roomService.create(input);
+      const roomId = id || result.data.id;
+      toast(id ? 'Đã cập nhật bản nháp' : 'Đã tạo bản nháp');
+      history.pushState({}, '', `/rooms/${roomId}/edit`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch (error) { toast(error.message, 'error'); }
   };
+  if (id) {
+    document.querySelector('#image-upload-form').onsubmit = async (event) => {
+      event.preventDefault();
+      const files = event.currentTarget.images.files;
+      if (!files.length) return;
+      const button = event.currentTarget.querySelector('button');
+      button.disabled = true;
+      button.textContent = 'Đang tải lên Azure…';
+      try {
+        const result = await roomService.uploadImages(id, files);
+        const verified = result.data.every((image) => image.vision?.provider === 'azure-ai-vision' && image.vision?.fallbackUsed === false);
+        toast(verified ? 'Ảnh đã lưu trên Blob và Vision xác minh thành công' : 'Ảnh đã lưu nhưng Vision chưa được xác minh', verified ? 'success' : 'error');
+        await roomForm(id);
+      } catch (error) {
+        toast(error.message, 'error');
+        button.disabled = false;
+        button.textContent = 'Tải lên & phân tích';
+      }
+    };
+    await loadVisionEvidence(room);
+  }
 }
 
 export async function roommateProfile() {

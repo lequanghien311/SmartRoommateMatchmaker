@@ -5,6 +5,7 @@ const ReportsService = require('../src/modules/reports/reports.service');
 const AdminService = require('../src/modules/admin/admin.service');
 const MemoryCacheProvider = require('../src/shared/providers/cache/MemoryCacheProvider');
 const LocalMessagingProvider = require('../src/shared/providers/messaging/LocalMessagingProvider');
+const MediaService = require('../src/modules/media/media.service');
 
 const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 const messaging = new LocalMessagingProvider();
@@ -34,6 +35,38 @@ describe('RoomsService', () => {
     const service = new RoomsService(repository, messaging, new MemoryCacheProvider(), logger);
     await expect(service.transition('room', { id: 'u', role: 'landlord' }, 'pending'))
       .rejects.toMatchObject({ statusCode: 422 });
+  });
+});
+
+describe('MediaService', () => {
+  test('upload Blob tự động trả bằng chứng Azure AI Vision', async () => {
+    const repository = {
+      roomOwnedBy: jest.fn().mockResolvedValue(true),
+      count: jest.fn().mockResolvedValue(0),
+      create: jest.fn().mockResolvedValue({ id: 'image-1', url: 'https://blob/image.jpg' }),
+    };
+    const storage = {
+      save: jest.fn().mockResolvedValue({ key: 'rooms/r/image.jpg', url: 'https://blob/image.jpg' }),
+      delete: jest.fn(),
+    };
+    const vision = {
+      analyzeImageBuffer: jest.fn().mockResolvedValue({
+        provider: 'azure-ai-vision', fallbackUsed: false, caption: 'a room', tags: ['room'],
+      }),
+    };
+    const file = { buffer: Buffer.from('image'), mimetype: 'image/jpeg', size: 5, originalname: 'room.jpg' };
+    const result = await new MediaService(repository, storage, vision).upload('room', { id: 'owner' }, [file]);
+    expect(result[0].vision).toMatchObject({ provider: 'azure-ai-vision', fallbackUsed: false });
+    expect(vision.analyzeImageBuffer).toHaveBeenCalledWith(file.buffer, 'image/jpeg', 'rooms/r/image.jpg');
+  });
+
+  test('không cho người ngoài gọi lại Vision trên ảnh phòng', async () => {
+    const repository = {
+      find: jest.fn().mockResolvedValue({ id: 'image-1', room_id: 'room' }),
+      roomOwnedBy: jest.fn().mockResolvedValue(false),
+    };
+    const service = new MediaService(repository, {}, { analyzeImageBuffer: jest.fn() });
+    await expect(service.analyze('image-1', { id: 'outsider' })).rejects.toMatchObject({ statusCode: 403 });
   });
 });
 
@@ -143,4 +176,3 @@ describe('MemoryCacheProvider', () => {
     expect(await cache.get('rooms:popular')).toBeNull();
   });
 });
-

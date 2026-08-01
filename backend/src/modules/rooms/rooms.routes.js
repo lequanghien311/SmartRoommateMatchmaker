@@ -13,10 +13,10 @@ const controller = new RoomsController(new RoomsService(new RoomsRepository(pool
 router.get('/', validators.search, validate, controller.search);
 router.get('/mine', authenticate, authorize('landlord'), controller.mine);
 router.post('/', authenticate, authorize('landlord'), validators.create, validate, controller.create);
+router.get('/:id/manage', authenticate, authorize('landlord', 'admin'), validators.id, validate, controller.manage);
 router.get('/:id', validators.id, validate, controller.detail);
 router.put('/:id', authenticate, authorize('landlord', 'admin'), validators.id, validators.update, validate, controller.update);
 router.patch('/:id/status', authenticate, authorize('landlord', 'admin'), validators.id, validators.transition, validate, controller.transition);
 router.delete('/:id', authenticate, authorize('landlord', 'admin'), validators.id, validate, controller.remove);
 
 module.exports = router;
-

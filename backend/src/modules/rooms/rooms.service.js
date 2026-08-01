@@ -24,6 +24,14 @@ class RoomsService {
     return room;
   }
 
+  async manage(id, user) {
+    const room = await this.repository.findById(id, true);
+    if (!room || (user.role !== 'admin' && room.landlord_id !== user.id)) {
+      throw new AppError('Không tìm thấy phòng hoặc bạn không phải chủ tin', 404);
+    }
+    return room;
+  }
+
   clean(input) {
     const clean = { ...input };
     for (const field of ['title', 'description', 'address']) {
@@ -82,4 +90,3 @@ class RoomsService {
 }
 
 module.exports = RoomsService;
-

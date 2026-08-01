@@ -22,6 +22,14 @@ class RoomsController {
     }
   };
 
+  manage = async (req, res, next) => {
+    try {
+      success(res, await this.service.manage(req.params.id, req.user));
+    } catch (error) {
+      next(error);
+    }
+  };
+
   create = async (req, res, next) => {
     try {
       success(res, await this.service.create(req.user.id, req.body, req.correlationId), 'Tạo phòng thành công', {}, 201);
@@ -65,4 +73,3 @@ class RoomsController {
 }
 
 module.exports = RoomsController;
-
