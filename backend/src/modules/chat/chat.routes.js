@@ -21,6 +21,18 @@ const controller = new Controller(service);
 const router = express.Router();
 router.use(authenticate);
 router.get('/', controller.list);
+router.get('/pubsub-token', async (req, res, next) => {
+  try {
+    const cs = process.env.AZURE_WEB_PUBSUB_CONNECTION_STRING;
+    const hub = process.env.AZURE_WEB_PUBSUB_HUB || 'chat';
+    if (!cs) return res.status(400).json({ success: false, message: 'Thiếu AZURE_WEB_PUBSUB_CONNECTION_STRING' });
+    const pubsub = new AzureWebPubSub(cs, hub);
+    const token = await pubsub.getClientAccessToken(req.user.id);
+    res.json({ success: true, data: { url: token.url, token: token.token, hub } });
+  } catch (err) {
+    next(err);
+  }
+});
 router.post('/', controller.create);
 router.get('/:id/messages', controller.messages);
 router.post('/:id/messages', controller.send);
