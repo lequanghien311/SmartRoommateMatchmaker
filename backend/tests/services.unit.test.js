@@ -5,6 +5,9 @@ const ReportsService = require('../src/modules/reports/reports.service');
 const AdminService = require('../src/modules/admin/admin.service');
 const MemoryCacheProvider = require('../src/shared/providers/cache/MemoryCacheProvider');
 const LocalMessagingProvider = require('../src/shared/providers/messaging/LocalMessagingProvider');
+const MediaService = require('../src/modules/media/media.service');
+const RoomIntelligenceService = require('../src/modules/rooms/room-intelligence.service');
+const { hydrateAzureSearchRooms } = require('../src/modules/cloud/search-hydrator');
 
 const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 const messaging = new LocalMessagingProvider();
@@ -34,6 +37,137 @@ describe('RoomsService', () => {
     const service = new RoomsService(repository, messaging, new MemoryCacheProvider(), logger);
     await expect(service.transition('room', { id: 'u', role: 'landlord' }, 'pending'))
       .rejects.toMatchObject({ statusCode: 422 });
+  });
+
+  test('gửi duyệt chỉ thành công khi Azure Content Safety xác minh không fallback', async () => {
+    const repository = {
+      countImages: jest.fn().mockResolvedValue(1),
+      findById: jest.fn().mockResolvedValue({ id: 'room', landlord_id: 'u', title: 'Phòng an toàn', description: 'Mô tả phòng sạch sẽ và đầy đủ tiện nghi.' }),
+      transition: jest.fn().mockResolvedValue({ id: 'room', status: 'pending' }),
+    };
+    const contentSafety = { analyzeText: jest.fn().mockResolvedValue({
+      allowed: true, severity: 'low', categories: [], provider: 'azure-content-safety', fallbackUsed: false,
+    }) };
+    const service = new RoomsService(repository, messaging, new MemoryCacheProvider(), logger, contentSafety);
+    const result = await service.transition('room', { id: 'u', role: 'landlord' }, 'pending');
+    expect(contentSafety.analyzeText).toHaveBeenCalledWith(expect.stringContaining('Mô tả phòng'));
+    expect(result.moderation).toMatchObject({ moderationStatus: 'approved', fallbackUsed: false });
+  });
+
+  test('Azure Content Safety fallback giữ phòng ở draft moderation_pending', async () => {
+    const repository = {
+      countImages: jest.fn().mockResolvedValue(1),
+      findById: jest.fn().mockResolvedValue({ id: 'room', landlord_id: 'u', title: 'Phòng', description: 'Mô tả đủ dài cho phòng.' }),
+      transition: jest.fn(),
+    };
+    const contentSafety = { analyzeText: jest.fn().mockResolvedValue({
+      allowed: true, provider: 'azure-content-safety-fallback', fallbackUsed: true, error: 'timeout',
+    }) };
+    const service = new RoomsService(repository, messaging, new MemoryCacheProvider(), logger, contentSafety);
+    await expect(service.transition('room', { id: 'u', role: 'landlord' }, 'pending'))
+      .rejects.toMatchObject({ statusCode: 503, errors: [expect.objectContaining({ moderationStatus: 'moderation_pending' })] });
+    expect(repository.transition).not.toHaveBeenCalled();
+  });
+});
+
+describe('Azure Search hydration', () => {
+  test('giữ score và lấy giá mới nhất từ PostgreSQL theo thứ tự Search', async () => {
+    const firstId = '11111111-1111-4111-8111-111111111111';
+    const secondId = '22222222-2222-4222-8222-222222222222';
+    const db = {
+      query: jest.fn().mockResolvedValue({
+        rows: [
+          { id: secondId, title: 'Phòng B', monthly_price: 4200000 },
+          { id: firstId, title: 'Phòng A', monthly_price: 3100000 },
+        ],
+      }),
+    };
+    const indexed = {
+      provider: 'azure-ai-search', source: 'azure-ai-search', fallbackUsed: false,
+      results: [
+        { id: firstId, price: 999, '@search.score': 3.5 },
+        { id: secondId, price: 888, '@search.score': 2.1 },
+      ],
+    };
+
+    const result = await hydrateAzureSearchRooms(db, indexed);
+
+    expect(result.results.map((room) => room.id)).toEqual([firstId, secondId]);
+    expect(result.results[0]).toMatchObject({ monthly_price: 3100000, '@search.score': 3.5 });
+    expect(result.results[0].price).toBeUndefined();
+    expect(result).toMatchObject({
+      provider: 'azure-ai-search', fallbackUsed: false, hydratedFrom: 'postgresql', resultCount: 2,
+    });
+  });
+
+  test('không biến fallback thành kết quả Azure', async () => {
+    const fallback = { provider: 'local-search', fallbackUsed: true, results: [{ id: 'demo' }] };
+    const db = { query: jest.fn() };
+    await expect(hydrateAzureSearchRooms(db, fallback)).resolves.toBe(fallback);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('RoomIntelligenceService', () => {
+  const room = { id: 'room', description: 'Mô tả production hiện tại của phòng.' };
+  const repository = { findById: jest.fn().mockResolvedValue(room) };
+
+  test('Translator nhận đúng mô tả hiện tại và không fallback', async () => {
+    const translator = { translateText: jest.fn().mockResolvedValue({
+      translatedText: 'Current room description', provider: 'azure-translator', fallbackUsed: false,
+    }) };
+    const service = new RoomIntelligenceService(repository, translator, {}, {}, {});
+    const result = await service.translate('room', 'en');
+    expect(translator.translateText).toHaveBeenCalledWith(room.description, 'en');
+    expect(result).toMatchObject({ originalText: room.description, provider: 'azure-translator', fallbackUsed: false });
+  });
+
+  test('AI Language trả key phrases Azure cho đúng mô tả phòng', async () => {
+    const language = { analyzeText: jest.fn().mockResolvedValue({
+      sentiment: 'positive', keyPhrases: ['phòng sạch'], provider: 'azure-ai-language', fallbackUsed: false,
+    }) };
+    const service = new RoomIntelligenceService(repository, {}, {}, {}, language);
+    const result = await service.analyzeLanguage('room');
+    expect(language.analyzeText).toHaveBeenCalledWith(room.description);
+    expect(result.keyPhrases).toEqual(['phòng sạch']);
+  });
+
+  test('Speech fallback bị từ chối thay vì phát audio giả', async () => {
+    const speech = { synthesizeAudio: jest.fn().mockResolvedValue({ provider: 'azure-speech-fallback', fallbackUsed: true }) };
+    const service = new RoomIntelligenceService(repository, {}, speech, {}, {});
+    await expect(service.synthesize('room')).rejects.toMatchObject({ statusCode: 503 });
+  });
+});
+
+describe('MediaService', () => {
+  test('upload Blob tự động trả bằng chứng Azure AI Vision', async () => {
+    const repository = {
+      roomOwnedBy: jest.fn().mockResolvedValue(true),
+      count: jest.fn().mockResolvedValue(0),
+      create: jest.fn().mockResolvedValue({ id: 'image-1', url: 'https://blob/image.jpg' }),
+    };
+    const storage = {
+      save: jest.fn().mockResolvedValue({ key: 'rooms/r/image.jpg', url: 'https://blob/image.jpg' }),
+      delete: jest.fn(),
+    };
+    const vision = {
+      analyzeImageBuffer: jest.fn().mockResolvedValue({
+        provider: 'azure-ai-vision', fallbackUsed: false, caption: 'a room', tags: ['room'],
+      }),
+    };
+    const file = { buffer: Buffer.from('image'), mimetype: 'image/jpeg', size: 5, originalname: 'room.jpg' };
+    const result = await new MediaService(repository, storage, vision).upload('room', { id: 'owner' }, [file]);
+    expect(result[0].vision).toMatchObject({ provider: 'azure-ai-vision', fallbackUsed: false });
+    expect(vision.analyzeImageBuffer).toHaveBeenCalledWith(file.buffer, 'image/jpeg', 'rooms/r/image.jpg');
+  });
+
+  test('không cho người ngoài gọi lại Vision trên ảnh phòng', async () => {
+    const repository = {
+      find: jest.fn().mockResolvedValue({ id: 'image-1', room_id: 'room' }),
+      roomOwnedBy: jest.fn().mockResolvedValue(false),
+    };
+    const service = new MediaService(repository, {}, { analyzeImageBuffer: jest.fn() });
+    await expect(service.analyze('image-1', { id: 'outsider' })).rejects.toMatchObject({ statusCode: 403 });
   });
 });
 
@@ -143,4 +277,3 @@ describe('MemoryCacheProvider', () => {
     expect(await cache.get('rooms:popular')).toBeNull();
   });
 });
-

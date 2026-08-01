@@ -12,6 +12,7 @@ class AzureContentSafetyProvider {
         categories: [],
         severity: 'low',
         requestId: 'fallback-no-key',
+        fallbackUsed: true,
         checkedAt,
         provider: 'azure-content-safety-fallback',
       };
@@ -45,6 +46,8 @@ class AzureContentSafetyProvider {
         })),
         severity: flagged ? 'high' : 'low',
         requestId: response.headers.get('apim-request-id') || 'cs-' + Date.now(),
+        httpStatus: response.status,
+        fallbackUsed: false,
         checkedAt,
         provider: 'azure-content-safety',
       };
@@ -54,6 +57,7 @@ class AzureContentSafetyProvider {
         categories: [],
         severity: 'low',
         requestId: 'fallback-err',
+        fallbackUsed: true,
         checkedAt,
         provider: 'azure-content-safety-fallback',
         error: err.message,

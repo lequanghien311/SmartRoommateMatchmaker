@@ -42,7 +42,7 @@ export function confirmDialog({ title, message, confirmText = 'Xác nhận', dan
   });
 }
 
-export function roomCard(room) {
+export function roomCard(room, actions = '') {
   const image = room.images?.find((item) => item.isCover || item.is_cover) || room.images?.[0];
   return `<article class="room-card">
     <div class="room-media">${image ? `<img src="${escapeHtml(image.url)}" alt="${escapeHtml(room.title)}" />` : '<div class="room-placeholder">Không gian mới</div>'}
@@ -53,7 +53,7 @@ export function roomCard(room) {
     <h3><a href="/rooms/${room.id}" data-link>${escapeHtml(room.title)}</a></h3>
     <div class="price-row"><span class="price">${money(room.monthly_price || room.monthlyPrice)}đ <small>/ tháng</small></span>
     <span class="pill">${room.room_type || room.roomType}</span>
-    ${room['@search.score'] ? `<span class="pill" style="background:#e0f2fe;color:#0369a1;border:0;" title="Điểm phù hợp từ Azure AI Search">🔍 ${Number(room['@search.score']).toFixed(2)}</span>` : ''}</div></div>
+    ${room['@search.score'] ? `<span class="pill" style="background:#e0f2fe;color:#0369a1;border:0;" title="Điểm phù hợp từ Azure AI Search">🔍 ${Number(room['@search.score']).toFixed(2)}</span>` : ''}</div>${actions}</div>
   </article>`;
 }
 

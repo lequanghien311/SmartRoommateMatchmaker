@@ -1,9 +1,10 @@
 const AppError = require('../../shared/errors/AppError');
 
 class MediaService {
-  constructor(repository, storage) {
+  constructor(repository, storage, vision = null) {
     this.repository = repository;
     this.storage = storage;
+    this.vision = vision;
   }
 
   async upload(roomId, user, files) {
@@ -14,13 +15,29 @@ class MediaService {
     for (let index = 0; index < files.length; index += 1) {
       const stored = await this.storage.save(files[index], `rooms/${roomId}`);
       try {
-        created.push(await this.repository.create(roomId, files[index], stored, count + index));
+        const image = await this.repository.create(roomId, files[index], stored, count + index);
+        const analysis = this.vision
+          ? await this.vision.analyzeImageBuffer(files[index].buffer, files[index].mimetype, stored.key)
+          : null;
+        created.push({ ...image, vision: analysis });
       } catch (error) {
         await this.storage.delete(stored.key).catch(() => {});
         throw error;
       }
     }
     return created;
+  }
+
+  async analyze(imageId, user) {
+    const image = await this.repository.find(imageId);
+    if (!image) throw new AppError('Không tìm thấy ảnh', 404);
+    if (!(await this.repository.roomOwnedBy(image.room_id, user))) {
+      throw new AppError('Bạn không có quyền phân tích ảnh này', 403);
+    }
+    if (!this.vision) throw new AppError('Azure AI Vision chưa được cấu hình', 503);
+    const buffer = await this.storage.readBuffer(image.storage_key);
+    const result = await this.vision.analyzeImageBuffer(buffer, image.mime_type, image.storage_key);
+    return { imageId: image.id, imageUrl: image.url, ...result };
   }
 
   async remove(imageId, user) {
@@ -45,4 +62,3 @@ class MediaService {
 }
 
 module.exports = MediaService;
-

@@ -13,6 +13,14 @@ class MediaController {
     }
   };
 
+  vision = async (req, res, next) => {
+    try {
+      success(res, await this.service.analyze(req.params.imageId, req.user));
+    } catch (error) {
+      next(error);
+    }
+  };
+
   remove = async (req, res, next) => {
     try {
       await this.service.remove(req.params.imageId, req.user);
@@ -41,4 +49,3 @@ class MediaController {
 }
 
 module.exports = MediaController;
-

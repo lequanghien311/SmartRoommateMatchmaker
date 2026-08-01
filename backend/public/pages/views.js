@@ -91,7 +91,15 @@ export async function roomDetail(id) {
     document.querySelector('#room-detail').innerHTML = `<div><div class="gallery">${gallery}</div><article class="panel detail-panel">
       <span class="eyebrow">${escapeHtml(room.room_type)}</span><h2>${escapeHtml(room.title)}</h2>
       <div class="room-meta"><span>⌖ ${escapeHtml(room.address)}, ${escapeHtml(room.district)}</span><span>□ ${room.area} m²</span><span>◎ ${room.max_occupants} người</span></div>
-      <hr style="border:0;border-top:1px solid var(--line);margin:24px 0" /><h3>Mô tả</h3><p>${escapeHtml(room.description)}</p>
+      <hr style="border:0;border-top:1px solid var(--line);margin:24px 0" /><h3>Mô tả</h3><p id="room-description">${escapeHtml(room.description)}</p>
+      <div class="azure-actions">
+        <button class="button button-secondary button-small" data-translate-room>Dịch sang tiếng Anh</button>
+        <button class="button button-secondary button-small" data-original-room hidden>Xem bản gốc</button>
+        <button class="button button-secondary button-small" data-speech-room>Nghe mô tả</button>
+      </div>
+      <audio id="room-audio" controls hidden></audio>
+      <div id="translation-evidence"></div>
+      <div id="language-evidence" class="azure-evidence" style="margin-top:16px"><strong>Azure AI Language</strong><span>Đang phân tích mô tả hiện tại…</span></div>
       <h3>Tiện ích</h3><ul class="amenity-list">${(room.amenities || []).map((item) => `<li>✓ ${escapeHtml(item.name)}</li>`).join('') || '<li>Đang cập nhật</li>'}</ul>
     </article></div><aside><div class="panel detail-panel sticky-panel"><span class="eyebrow">Giá thuê hàng tháng</span>
       <h2 style="color:var(--forest);margin:8px 0">${money(room.monthly_price)}đ</h2><p class="muted">Cọc ${money(room.deposit)}đ · Còn ${room.available_rooms} phòng</p>
@@ -100,6 +108,58 @@ export async function roomDetail(id) {
       <a class="button button-secondary" style="width:100%" href="/reports?roomId=${room.id}" data-link>⚑ Báo cáo tin</a>
       <hr style="border:0;border-top:1px solid var(--line);margin:24px 0" /><h3>${escapeHtml(room.landlord.fullName)}</h3><p class="muted">Chủ trọ trên SmartRoomie</p>
     </div></aside>`;
+    const description = document.querySelector('#room-description');
+    const translateButton = document.querySelector('[data-translate-room]');
+    const originalButton = document.querySelector('[data-original-room]');
+    translateButton.onclick = async () => {
+      translateButton.disabled = true;
+      translateButton.textContent = 'Đang dịch bằng Azure…';
+      try {
+        const { data } = await roomService.translate(id);
+        if (data.provider !== 'azure-translator' || data.fallbackUsed !== false) throw new Error('Translator đã dùng fallback');
+        description.textContent = data.translatedText;
+        originalButton.hidden = false;
+        document.querySelector('#translation-evidence').innerHTML = `<div class="azure-evidence verified"><strong>Azure Translator verified</strong><span>provider=${escapeHtml(data.provider)} · fallbackUsed=false · ${escapeHtml(data.sourceLanguage)}→${escapeHtml(data.targetLanguage)}</span></div>`;
+      } catch (error) { toast(error.message, 'error'); }
+      finally { translateButton.disabled = false; translateButton.textContent = 'Dịch sang tiếng Anh'; }
+    };
+    originalButton.onclick = () => {
+      description.textContent = room.description;
+      originalButton.hidden = true;
+    };
+    document.querySelector('[data-speech-room]').onclick = async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = 'Đang tạo audio Azure…';
+      try {
+        const audioResult = await roomService.speech(id);
+        if (audioResult.provider !== 'azure-ai-speech' || audioResult.fallbackUsed || !audioResult.contentType?.startsWith('audio/mpeg')) {
+          throw new Error('Azure Speech không trả audio/mpeg hợp lệ');
+        }
+        const audio = document.querySelector('#room-audio');
+        if (audio.dataset.objectUrl) URL.revokeObjectURL(audio.dataset.objectUrl);
+        const objectUrl = URL.createObjectURL(audioResult.blob);
+        audio.dataset.objectUrl = objectUrl;
+        audio.src = objectUrl;
+        audio.hidden = false;
+        await audio.play();
+        button.textContent = 'Phát lại mô tả';
+      } catch (error) {
+        toast(error.message, 'error');
+        button.textContent = 'Nghe mô tả';
+      } finally { button.disabled = false; }
+    };
+    try {
+      const { data } = await roomService.language(id);
+      const verified = data.provider === 'azure-ai-language' && data.fallbackUsed === false;
+      document.querySelector('#language-evidence').className = `azure-evidence ${verified ? 'verified' : 'failed'}`;
+      document.querySelector('#language-evidence').innerHTML = `<strong>Azure AI Language ${verified ? 'verified' : 'không khả dụng'}</strong>
+        <span>provider=${escapeHtml(data.provider)} · fallbackUsed=${String(data.fallbackUsed)} · sentiment=${escapeHtml(data.sentiment)} · confidence=${Number(data.confidence).toFixed(2)}</span>
+        <div class="tag-list">${(data.keyPhrases || []).map((phrase) => `<span class="pill">${escapeHtml(phrase)}</span>`).join('')}</div>`;
+    } catch (error) {
+      document.querySelector('#language-evidence').className = 'azure-evidence failed';
+      document.querySelector('#language-evidence').innerHTML = `<strong>Azure AI Language không khả dụng</strong><span>${escapeHtml(error.message)}</span>`;
+    }
   } catch (error) {
     document.querySelector('#room-detail').className = '';
     document.querySelector('#room-detail').innerHTML = errorState(error.message);
@@ -200,28 +260,140 @@ export async function landlordRooms() {
   main().innerHTML = `${pageShell('Quản lý tin đăng')}<section class="container layout-sidebar">${sidebar('/landlord/rooms')}<div><div class="section-heading"><div><h2>Tin của tôi</h2><p class="muted">Theo dõi trạng thái, lượt xem và yêu thích.</p></div><a href="/rooms/new" class="button" data-link>+ Đăng phòng</a></div><div id="mine">${loadingCards(3)}</div></div></section>`;
   try {
     const result = await roomService.mine();
-    document.querySelector('#mine').innerHTML = result.data.length ? `<div class="room-grid">${result.data.map(roomCard).join('')}</div>` : emptyState('Chưa có tin đăng', 'Tạo bản nháp đầu tiên của bạn.', '<a class="button" href="/rooms/new" data-link>Đăng phòng</a>');
+    document.querySelector('#mine').innerHTML = result.data.length ? `<div class="room-grid">${result.data.map((room) => roomCard(room, `<div style="margin-top:14px"><a class="button button-secondary button-small" href="/rooms/${room.id}/edit" data-link>Chỉnh sửa & dịch vụ Azure</a></div>`)).join('')}</div>` : emptyState('Chưa có tin đăng', 'Tạo bản nháp đầu tiên của bạn.', '<a class="button" href="/rooms/new" data-link>Đăng phòng</a>');
   } catch (error) { document.querySelector('#mine').innerHTML = errorState(error.message); }
 }
 
-export async function roomForm() {
+function renderVisionEvidence(result) {
+  if (!result) return '<p class="muted">Chưa có kết quả Vision.</p>';
+  const verified = result.provider === 'azure-ai-vision' && result.fallbackUsed === false;
+  return `<div class="azure-evidence ${verified ? 'verified' : 'failed'}">
+    <strong>${verified ? 'Azure AI Vision verified' : 'Vision chưa được xác minh'}</strong>
+    <span>provider=${escapeHtml(result.provider || 'unknown')} · fallbackUsed=${String(result.fallbackUsed)}</span>
+    <p>${escapeHtml(result.caption || result.error || 'Không có caption')}</p>
+    <div class="tag-list">${(result.tags || []).map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join('')}</div>
+  </div>`;
+}
+
+async function loadVisionEvidence(room) {
+  const gallery = document.querySelector('#manage-images');
+  if (!gallery) return;
+  if (!room.images?.length) {
+    gallery.innerHTML = emptyState('Chưa có ảnh', 'Chọn ảnh JPEG, PNG hoặc WebP để tải lên Azure Blob Storage.');
+    return;
+  }
+  gallery.innerHTML = room.images.map((image) => `<article class="panel managed-image" data-managed-image="${image.id}">
+    <img src="${escapeHtml(image.url)}" alt="Ảnh phòng" />
+    <div><p class="muted">Đang phân tích bằng Azure AI Vision…</p></div>
+  </article>`).join('');
+  await Promise.all(room.images.map(async (image) => {
+    const target = document.querySelector(`[data-managed-image="${image.id}"] > div`);
+    try {
+      const { data } = await roomService.analyzeImage(image.id);
+      if (target) target.innerHTML = renderVisionEvidence(data);
+    } catch (error) {
+      if (target) target.innerHTML = renderVisionEvidence({ provider: 'unavailable', fallbackUsed: true, error: error.message });
+    }
+  }));
+}
+
+export async function roomForm(id) {
   if (!requireRole('landlord')) return;
-  main().innerHTML = `${pageShell('Đăng phòng mới', 'Thông tin rõ ràng giúp tin được duyệt nhanh hơn.')}<section class="container layout-sidebar">${sidebar('/rooms/new')}
-  <form class="panel detail-panel form-grid" id="room-form"><div class="field field-full"><label>Tiêu đề</label><input name="title" required maxlength="180" /></div>
-  <div class="field field-full"><label>Mô tả (ít nhất 20 ký tự)</label><textarea name="description" required minlength="20"></textarea></div>
-  <div class="field"><label>Giá thuê/tháng</label><input name="monthlyPrice" type="number" min="1" required /></div><div class="field"><label>Tiền cọc</label><input name="deposit" type="number" min="0" value="0" /></div>
-  <div class="field"><label>Diện tích (m²)</label><input name="area" type="number" min="1" required /></div><div class="field"><label>Loại phòng</label><select name="roomType"><option value="private">Phòng riêng</option><option value="studio">Studio</option><option value="dorm">Ký túc xá</option></select></div>
-  <div class="field field-full"><label>Địa chỉ</label><input name="address" required /></div><div class="field"><label>Tỉnh/thành phố</label><input name="province" value="TP. Hồ Chí Minh" required /></div><div class="field"><label>Quận/huyện</label><input name="district" required /></div>
-  <div class="field"><label>Phường/xã</label><input name="ward" /></div><div class="field"><label>Số người tối đa</label><input name="maxOccupants" type="number" min="1" value="2" /></div>
-  <div class="field"><label>Số phòng còn lại</label><input name="availableRooms" type="number" min="0" value="1" /></div><div class="field"><label><input name="allowsPets" type="checkbox" style="width:auto;min-height:auto" /> Cho phép thú cưng</label></div>
-  <div class="form-actions"><button class="button button-secondary" type="button" data-link-back>Hủy</button><button class="button">Lưu bản nháp</button></div></form></section>`;
+  let room = null;
+  if (id) {
+    try { room = (await roomService.manage(id)).data; } catch (error) { main().innerHTML = errorState(error.message); return; }
+  }
+  const value = (field, fallback = '') => escapeHtml(room?.[field] ?? fallback);
+  main().innerHTML = `${pageShell(id ? 'Chỉnh sửa phòng' : 'Đăng phòng mới', 'Lưu bản nháp, xác minh vị trí và hoàn thiện ảnh trước khi gửi duyệt.')}<section class="container layout-sidebar">${sidebar('/rooms/new')}<div>
+  <form class="panel detail-panel form-grid" id="room-form"><div class="field field-full"><label>Tiêu đề</label><input name="title" value="${value('title')}" required maxlength="180" /></div>
+  <div class="field field-full"><label>Mô tả (ít nhất 20 ký tự)</label><textarea name="description" required minlength="20">${value('description')}</textarea></div>
+  <div class="field"><label>Giá thuê/tháng</label><input name="monthlyPrice" type="number" min="1" value="${value('monthly_price')}" required /></div><div class="field"><label>Tiền cọc</label><input name="deposit" type="number" min="0" value="${value('deposit', 0)}" /></div>
+  <div class="field"><label>Diện tích (m²)</label><input name="area" type="number" min="1" value="${value('area')}" required /></div><div class="field"><label>Loại phòng</label><select name="roomType"><option value="private">Phòng riêng</option><option value="studio">Studio</option><option value="dorm">Ký túc xá</option></select></div>
+  <div class="field field-full"><label>Địa chỉ</label><input name="address" value="${value('address')}" required /><button class="button button-secondary button-small" type="button" data-geocode-room style="margin-top:8px">Xác minh bằng Azure Maps</button><div id="maps-evidence" style="margin-top:8px"></div></div><div class="field"><label>Tỉnh/thành phố</label><input name="province" value="${value('province', 'TP. Hồ Chí Minh')}" required /></div><div class="field"><label>Quận/huyện</label><input name="district" value="${value('district')}" required /></div>
+  <div class="field"><label>Phường/xã</label><input name="ward" value="${value('ward')}" /></div><div class="field"><label>Số người tối đa</label><input name="maxOccupants" type="number" min="1" value="${value('max_occupants', 2)}" /></div>
+  <div class="field"><label>Số phòng còn lại</label><input name="availableRooms" type="number" min="0" value="${value('available_rooms', 1)}" /></div><div class="field"><label><input name="allowsPets" type="checkbox" style="width:auto;min-height:auto" ${room?.allows_pets ? 'checked' : ''} /> Cho phép thú cưng</label></div>
+  <div class="form-actions"><button class="button button-secondary" type="button" data-link-back>Hủy</button><button class="button">${id ? 'Cập nhật bản nháp' : 'Lưu bản nháp'}</button></div></form>
+  ${id ? `<section class="panel detail-panel" style="margin-top:20px"><span class="eyebrow">Azure Blob Storage + AI Vision</span><h2>Ảnh phòng</h2>
+    <form id="image-upload-form" class="form-grid"><div class="field field-full"><label>Chọn ảnh</label><input type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple required /></div><div class="form-actions"><button class="button">Tải lên & phân tích</button></div></form>
+    <div id="manage-images" class="managed-images" style="margin-top:20px"></div></section>
+    <section class="panel detail-panel" style="margin-top:20px"><span class="eyebrow">Azure AI Content Safety</span><h2>Gửi kiểm duyệt</h2><p class="muted">Tiêu đề và mô tả hiện tại sẽ được Azure kiểm duyệt. Nếu Azure lỗi, phòng vẫn ở bản nháp với trạng thái moderation_pending.</p>
+      <button class="button" type="button" data-submit-moderation ${['pending', 'active'].includes(room?.status) ? 'disabled' : ''}>${room?.status === 'pending' ? 'Đang chờ admin duyệt' : 'Kiểm duyệt & gửi duyệt'}</button><div id="moderation-evidence" style="margin-top:12px"></div>
+    </section>` : ''}
+  </div></section>`;
+  document.querySelector('[name="roomType"]').value = room?.room_type || 'private';
   document.querySelector('#room-form').onsubmit = async (event) => {
     event.preventDefault();
     const input = Object.fromEntries(new FormData(event.currentTarget));
     for (const key of ['monthlyPrice', 'deposit', 'area', 'maxOccupants', 'availableRooms']) input[key] = Number(input[key]);
     input.allowsPets = event.currentTarget.allowsPets.checked;
-    try { await roomService.create(input); toast('Đã tạo bản nháp'); history.pushState({}, '', '/landlord/rooms'); window.dispatchEvent(new PopStateEvent('popstate')); } catch (error) { toast(error.message, 'error'); }
+    try {
+      const result = id ? await roomService.update(id, input) : await roomService.create(input);
+      const roomId = id || result.data.id;
+      toast(id ? 'Đã cập nhật bản nháp' : 'Đã tạo bản nháp');
+      history.pushState({}, '', `/rooms/${roomId}/edit`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch (error) { toast(error.message, 'error'); }
   };
+  document.querySelector('[data-geocode-room]').onclick = async (event) => {
+    const form = document.querySelector('#room-form');
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = 'Đang xác minh Azure Maps…';
+    try {
+      const { data } = await roomService.geocode({
+        address: form.address.value,
+        ward: form.ward.value,
+        district: form.district.value,
+        province: form.province.value,
+      });
+      if (data.provider !== 'azure-maps' || data.fallbackUsed !== false) throw new Error('Azure Maps đã dùng fallback');
+      form.address.value = data.normalizedAddress;
+      document.querySelector('#maps-evidence').innerHTML = `<div class="azure-evidence verified"><strong>Địa chỉ đã xác minh</strong><span>provider=${escapeHtml(data.provider)} · fallbackUsed=false</span><p>${escapeHtml(data.normalizedAddress)}</p><span>latitude=${data.latitude} · longitude=${data.longitude}</span></div>`;
+    } catch (error) {
+      document.querySelector('#maps-evidence').innerHTML = `<div class="azure-evidence failed"><strong>Không thể xác minh địa chỉ</strong><span>${escapeHtml(error.message)}</span></div>`;
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Xác minh bằng Azure Maps';
+    }
+  };
+  if (id) {
+    document.querySelector('#image-upload-form').onsubmit = async (event) => {
+      event.preventDefault();
+      const files = event.currentTarget.images.files;
+      if (!files.length) return;
+      const button = event.currentTarget.querySelector('button');
+      button.disabled = true;
+      button.textContent = 'Đang tải lên Azure…';
+      try {
+        const result = await roomService.uploadImages(id, files);
+        const verified = result.data.every((image) => image.vision?.provider === 'azure-ai-vision' && image.vision?.fallbackUsed === false);
+        toast(verified ? 'Ảnh đã lưu trên Blob và Vision xác minh thành công' : 'Ảnh đã lưu nhưng Vision chưa được xác minh', verified ? 'success' : 'error');
+        await roomForm(id);
+      } catch (error) {
+        toast(error.message, 'error');
+        button.disabled = false;
+        button.textContent = 'Tải lên & phân tích';
+      }
+    };
+    document.querySelector('[data-submit-moderation]').onclick = async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = 'Azure đang kiểm duyệt…';
+      const evidence = document.querySelector('#moderation-evidence');
+      try {
+        const { data } = await roomService.transition(id, 'pending');
+        const moderation = data.moderation;
+        evidence.innerHTML = `<div class="azure-evidence verified"><strong>Nội dung đã qua kiểm duyệt và gửi duyệt</strong><span>provider=${escapeHtml(moderation.provider)} · fallbackUsed=false · status=${escapeHtml(moderation.moderationStatus)}</span></div>`;
+        button.textContent = 'Đang chờ admin duyệt';
+      } catch (error) {
+        const moderation = error.errors?.find((item) => item.field === 'moderation');
+        evidence.innerHTML = `<div class="azure-evidence failed"><strong>${escapeHtml(moderation?.moderationStatus || 'Kiểm duyệt thất bại')}</strong><span>provider=${escapeHtml(moderation?.provider || 'unknown')} · fallbackUsed=${String(moderation?.fallbackUsed ?? true)}</span><p>${escapeHtml(moderation?.message || error.message)}</p></div>`;
+        button.disabled = false;
+        button.textContent = 'Kiểm duyệt & gửi duyệt';
+      }
+    };
+    await loadVisionEvidence(room);
+  }
 }
 
 export async function roommateProfile() {

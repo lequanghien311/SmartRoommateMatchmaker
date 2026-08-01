@@ -30,5 +30,11 @@ const search = [
   query('page').optional().isInt({ min: 1 }).withMessage('Trang không hợp lệ'),
   query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Số mục không hợp lệ'),
 ];
+const geocode = [
+  body('address').trim().notEmpty().isLength({ max: 300 }).withMessage('Địa chỉ là bắt buộc'),
+  body('ward').optional().trim().isLength({ max: 100 }).withMessage('Phường/xã không hợp lệ'),
+  body('district').optional().trim().isLength({ max: 100 }).withMessage('Quận/huyện không hợp lệ'),
+  body('province').optional().trim().isLength({ max: 100 }).withMessage('Tỉnh/thành phố không hợp lệ'),
+];
 
-module.exports = { id, create, update, transition, search };
+module.exports = { id, create, update, transition, search, geocode };

@@ -4,11 +4,12 @@ const { transaction } = require('../../database/connection');
 const { getPagination, pageMeta } = require('../../shared/utils/pagination');
 
 class RoomsService {
-  constructor(repository, messaging, cache, logger) {
+  constructor(repository, messaging, cache, logger, contentSafety = null) {
     this.repository = repository;
     this.messaging = messaging;
     this.cache = cache;
     this.logger = logger;
+    this.contentSafety = contentSafety;
   }
 
   async search(query) {
@@ -21,6 +22,14 @@ class RoomsService {
     const room = await this.repository.findById(id);
     if (!room) throw new AppError('Không tìm thấy phòng', 404);
     this.repository.incrementView(id).catch(() => {});
+    return room;
+  }
+
+  async manage(id, user) {
+    const room = await this.repository.findById(id, true);
+    if (!room || (user.role !== 'admin' && room.landlord_id !== user.id)) {
+      throw new AppError('Không tìm thấy phòng hoặc bạn không phải chủ tin', 404);
+    }
     return room;
   }
 
@@ -59,6 +68,36 @@ class RoomsService {
         { field: 'images', message: 'Phải có ít nhất một ảnh' },
       ]);
     }
+    let moderation = null;
+    if (status === 'pending') {
+      const current = await this.manage(id, user);
+      moderation = this.contentSafety
+        ? await this.contentSafety.analyzeText(`${current.title}\n${current.description}`)
+        : { provider: 'unavailable', fallbackUsed: true, error: 'Provider chưa được cấu hình' };
+      if (moderation.fallbackUsed || moderation.provider !== 'azure-content-safety') {
+        throw new AppError('Azure Content Safety lỗi; phòng vẫn được giữ ở bản nháp moderation_pending', 503, [
+          {
+            field: 'moderation',
+            moderationStatus: 'moderation_pending',
+            provider: moderation.provider,
+            fallbackUsed: true,
+            message: moderation.error || 'Không thể xác minh nội dung',
+          },
+        ]);
+      }
+      if (!moderation.allowed) {
+        throw new AppError('Nội dung chưa đạt kiểm duyệt Azure Content Safety', 422, [
+          {
+            field: 'moderation',
+            moderationStatus: 'rejected',
+            provider: moderation.provider,
+            fallbackUsed: false,
+            severity: moderation.severity,
+            categories: moderation.categories,
+          },
+        ]);
+      }
+    }
     const room = await this.repository.transition(id, user, status, reason);
     if (!room) throw new AppError('Không tìm thấy phòng hoặc bạn không có quyền', 404);
     const eventType = { pending: 'RoomSubmitted', active: 'RoomApproved', rejected: 'RoomRejected' }[status];
@@ -67,7 +106,17 @@ class RoomsService {
       if (event) await this.messaging.publish(event);
     }
     await this.cache.delete('rooms:');
-    return room;
+    return moderation ? {
+      ...room,
+      moderation: {
+        moderationStatus: 'approved',
+        provider: moderation.provider,
+        fallbackUsed: false,
+        severity: moderation.severity,
+        categories: moderation.categories,
+        requestId: moderation.requestId,
+      },
+    } : room;
   }
 
   async mine(userId, query) {
@@ -82,4 +131,3 @@ class RoomsService {
 }
 
 module.exports = RoomsService;
-

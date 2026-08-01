@@ -14,6 +14,7 @@ class AzureMapsProvider {
         longitude: 106.7009,
         checkedAt,
         provider: 'azure-maps-fallback',
+        fallbackUsed: true,
       };
     }
 
@@ -38,6 +39,8 @@ class AzureMapsProvider {
         longitude: position.lon,
         checkedAt,
         provider: 'azure-maps',
+        httpStatus: response.status,
+        fallbackUsed: false,
       };
     } catch (err) {
       return {
@@ -46,6 +49,7 @@ class AzureMapsProvider {
         longitude: 106.7009,
         checkedAt,
         provider: 'azure-maps-fallback',
+        fallbackUsed: true,
         error: err.message,
       };
     }
