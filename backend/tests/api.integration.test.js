@@ -53,6 +53,11 @@ describe('API integration without external database', () => {
     expect(response.status).toBe(401);
   });
 
+  test('pubsub-token chưa đăng nhập trả 401 (không bị route /:id bắt nhầm)', async () => {
+    const response = await request(app).get('/api/conversations/pubsub-token');
+    expect(response.status).toBe(401);
+  });
+
   test('admin chưa đăng nhập trả 401', async () => {
     const response = await request(app).get('/api/admin/dashboard');
     expect(response.status).toBe(401);

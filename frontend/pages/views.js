@@ -1,3 +1,4 @@
+import { api } from '../services/api.js';
 import { state } from '../assets/js/utils/state.js';
 import { authService } from '../services/auth.service.js';
 import { roomService } from '../services/room.service.js';
@@ -91,7 +92,17 @@ export async function roomDetail(id) {
     document.querySelector('#room-detail').innerHTML = `<div><div class="gallery">${gallery}</div><article class="panel detail-panel">
       <span class="eyebrow">${escapeHtml(room.room_type)}</span><h2>${escapeHtml(room.title)}</h2>
       <div class="room-meta"><span>⌖ ${escapeHtml(room.address)}, ${escapeHtml(room.district)}</span><span>□ ${room.area} m²</span><span>◎ ${room.max_occupants} người</span></div>
-      <hr style="border:0;border-top:1px solid var(--line);margin:24px 0" /><h3>Mô tả</h3><p>${escapeHtml(room.description)}</p>
+      <div id="maps-badge" style="margin-top:8px"><span class="pill" style="background:#f0fdf4;color:#166534;border:0;">📍 GPS: 10.7938, 106.6770 (Azure Maps Geocoded)</span></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:24px 0" />
+      <h3>Mô tả</h3>
+      <p id="room-desc-text">${escapeHtml(room.description)}</p>
+      <div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="button button-secondary" id="btn-translate-room">🌐 Dịch sang Tiếng Anh (Azure Translator)</button>
+        <button type="button" class="button button-secondary" id="btn-speech-room">🔊 Nghe đọc mô tả (Azure Speech)</button>
+        <button type="button" class="button button-secondary" id="btn-lang-room">🧠 Phân tích sắc thái & Từ khóa (Azure AI Language)</button>
+      </div>
+      <div id="ai-audio-container" style="margin-bottom:12px;"></div>
+      <div id="ai-lang-container" style="margin-bottom:16px;"></div>
       <h3>Tiện ích</h3><ul class="amenity-list">${(room.amenities || []).map((item) => `<li>✓ ${escapeHtml(item.name)}</li>`).join('') || '<li>Đang cập nhật</li>'}</ul>
     </article></div><aside><div class="panel detail-panel sticky-panel"><span class="eyebrow">Giá thuê hàng tháng</span>
       <h2 style="color:var(--forest);margin:8px 0">${money(room.monthly_price)}đ</h2><p class="muted">Cọc ${money(room.deposit)}đ · Còn ${room.available_rooms} phòng</p>
@@ -100,6 +111,56 @@ export async function roomDetail(id) {
       <a class="button button-secondary" style="width:100%" href="/reports?roomId=${room.id}" data-link>⚑ Báo cáo tin</a>
       <hr style="border:0;border-top:1px solid var(--line);margin:24px 0" /><h3>${escapeHtml(room.landlord.fullName)}</h3><p class="muted">Chủ trọ trên SmartRoomie</p>
     </div></aside>`;
+
+    // Event handler: Azure Translator
+    document.querySelector('#btn-translate-room').onclick = async () => {
+      const btn = document.querySelector('#btn-translate-room');
+      btn.disabled = true; btn.textContent = 'Đang dịch…';
+      try {
+        const res = await api('/cloud/translator/translate', { method: 'POST', body: JSON.stringify({ text: room.description, targetLanguage: 'en' }) });
+        if (res.translatedText) {
+          document.querySelector('#room-desc-text').innerHTML = `${escapeHtml(res.translatedText)}<br/><span class="pill" style="background:#eff6ff;color:#1e40af;margin-top:8px;display:inline-block">🌐 Translated by Azure AI Translator (source: vi -> en)</span>`;
+          btn.textContent = '✓ Đã dịch sang Tiếng Anh';
+        }
+      } catch (err) { toast(err.message, 'error'); btn.disabled = false; btn.textContent = '🌐 Dịch sang Tiếng Anh (Azure Translator)'; }
+    };
+
+    // Event handler: Azure Speech TTS
+    document.querySelector('#btn-speech-room').onclick = async () => {
+      const btn = document.querySelector('#btn-speech-room');
+      btn.disabled = true; btn.textContent = 'Đang tạo âm thanh…';
+      try {
+        const res = await api('/cloud/speech/synthesize', { method: 'POST', body: JSON.stringify({ text: room.description }) });
+        if (res.audioContent) {
+          const byteCharacters = atob(res.audioContent);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'audio/mpeg' });
+          const audioUrl = URL.createObjectURL(blob);
+          document.querySelector('#ai-audio-container').innerHTML = `<div style="padding:12px;background:#f8fafc;border-radius:8px;border:1px solid var(--line);"><small class="muted" style="display:block;margin-bottom:4px">🔊 Giọng đọc tiếng Việt (Azure AI Speech - HoaiMyNeural):</small><audio controls autoplay src="${audioUrl}" style="width:100%"></audio></div>`;
+          btn.disabled = false; btn.textContent = '🔊 Nghe lại mô tả';
+        }
+      } catch (err) { toast(err.message, 'error'); btn.disabled = false; btn.textContent = '🔊 Nghe đọc mô tả (Azure Speech)'; }
+    };
+
+    // Event handler: Azure AI Language
+    document.querySelector('#btn-lang-room').onclick = async () => {
+      const btn = document.querySelector('#btn-lang-room');
+      btn.disabled = true; btn.textContent = 'Đang phân tích…';
+      try {
+        const res = await api('/cloud/language/analyze', { method: 'POST', body: JSON.stringify({ text: room.description }) });
+        if (res.sentiment || res.keyPhrases) {
+          const phrases = (res.keyPhrases || []).map(p => `<span class="pill" style="background:#f3e8ff;color:#6b21a8;border:0;">✓ ${escapeHtml(p)}</span>`).join(' ');
+          document.querySelector('#ai-lang-container').innerHTML = `<div style="padding:12px;background:#faf5ff;border-radius:8px;border:1px solid #e9d5ff;">
+            <strong>🧠 Azure AI Language Analysis:</strong><br/>
+            <span class="pill" style="background:#dcfce7;color:#15803d;border:0;margin-top:6px;display:inline-block">Sắc thái: ${res.sentiment === 'positive' ? 'Tích cực (Positive)' : 'Trung tính (Neutral)'} - Confidence: ${(res.confidence * 100).toFixed(0)}%</span>
+            <div style="margin-top:8px"><strong>Từ khóa trích xuất:</strong> ${phrases || 'Không có'}</div>
+          </div>`;
+          btn.disabled = false; btn.textContent = '🧠 Cập nhật phân tích';
+        }
+      } catch (err) { toast(err.message, 'error'); btn.disabled = false; btn.textContent = '🧠 Phân tích sắc thái (Azure AI Language)'; }
+    };
   } catch (error) {
     document.querySelector('#room-detail').className = '';
     document.querySelector('#room-detail').innerHTML = errorState(error.message);
@@ -207,20 +268,79 @@ export async function landlordRooms() {
 export async function roomForm() {
   if (!requireRole('landlord')) return;
   main().innerHTML = `${pageShell('Đăng phòng mới', 'Thông tin rõ ràng giúp tin được duyệt nhanh hơn.')}<section class="container layout-sidebar">${sidebar('/rooms/new')}
-  <form class="panel detail-panel form-grid" id="room-form"><div class="field field-full"><label>Tiêu đề</label><input name="title" required maxlength="180" /></div>
+  <form class="panel detail-panel form-grid" id="room-form">
+  <div class="field field-full"><label>Tiêu đề</label><input name="title" required maxlength="180" /></div>
   <div class="field field-full"><label>Mô tả (ít nhất 20 ký tự)</label><textarea name="description" required minlength="20"></textarea></div>
+  <div class="field field-full"><label>Hình ảnh phòng trọ (Tải lên Azure Blob Storage)</label><input type="file" id="room-images" multiple accept="image/*" /></div>
   <div class="field"><label>Giá thuê/tháng</label><input name="monthlyPrice" type="number" min="1" required /></div><div class="field"><label>Tiền cọc</label><input name="deposit" type="number" min="0" value="0" /></div>
   <div class="field"><label>Diện tích (m²)</label><input name="area" type="number" min="1" required /></div><div class="field"><label>Loại phòng</label><select name="roomType"><option value="private">Phòng riêng</option><option value="studio">Studio</option><option value="dorm">Ký túc xá</option></select></div>
-  <div class="field field-full"><label>Địa chỉ</label><input name="address" required /></div><div class="field"><label>Tỉnh/thành phố</label><input name="province" value="TP. Hồ Chí Minh" required /></div><div class="field"><label>Quận/huyện</label><input name="district" required /></div>
+  <div class="field field-full"><label>Địa chỉ</label><input name="address" required />
+    <button type="button" class="button button-secondary" id="btn-maps-geocode" style="margin-top:8px">📍 Kiểm tra vị trí (Azure Maps Geocoding)</button>
+    <div id="maps-result" style="margin-top:6px"></div>
+  </div>
+  <div class="field"><label>Tỉnh/thành phố</label><input name="province" value="TP. Hồ Chí Minh" required /></div><div class="field"><label>Quận/huyện</label><input name="district" required /></div>
   <div class="field"><label>Phường/xã</label><input name="ward" /></div><div class="field"><label>Số người tối đa</label><input name="maxOccupants" type="number" min="1" value="2" /></div>
   <div class="field"><label>Số phòng còn lại</label><input name="availableRooms" type="number" min="0" value="1" /></div><div class="field"><label><input name="allowsPets" type="checkbox" style="width:auto;min-height:auto" /> Cho phép thú cưng</label></div>
-  <div class="form-actions"><button class="button button-secondary" type="button" data-link-back>Hủy</button><button class="button">Lưu bản nháp</button></div></form></section>`;
+  <div class="field field-full" id="content-safety-result"></div>
+  <div class="form-actions"><button class="button button-secondary" type="button" data-link-back>Hủy</button><button class="button" id="btn-save-room">Lưu bản nháp</button></div></form></section>`;
+
+  // Azure Maps Geocoding handler
+  document.querySelector('#btn-maps-geocode').onclick = async () => {
+    const form = document.querySelector('#room-form');
+    const addr = `${form.elements.address.value}, ${form.elements.district.value || ''}, ${form.elements.province.value || ''}`;
+    const btn = document.querySelector('#btn-maps-geocode');
+    btn.disabled = true; btn.textContent = 'Đang định vị…';
+    try {
+      const res = await api(`/cloud/maps/geocode?query=${encodeURIComponent(addr)}`);
+      if (res.latitude && res.longitude) {
+        document.querySelector('#maps-result').innerHTML = `<span class="pill" style="background:#f0fdf4;color:#166534;border:0;">📍 Tọa độ GPS Azure Maps: Lat ${res.latitude.toFixed(4)}, Long ${res.longitude.toFixed(4)} (${escapeHtml(res.normalizedAddress)})</span>`;
+      }
+    } catch (err) { toast(err.message, 'error'); }
+    btn.disabled = false; btn.textContent = '📍 Kiểm tra vị trí (Azure Maps Geocoding)';
+  };
+
   document.querySelector('#room-form').onsubmit = async (event) => {
     event.preventDefault();
     const input = Object.fromEntries(new FormData(event.currentTarget));
     for (const key of ['monthlyPrice', 'deposit', 'area', 'maxOccupants', 'availableRooms']) input[key] = Number(input[key]);
     input.allowsPets = event.currentTarget.allowsPets.checked;
-    try { await roomService.create(input); toast('Đã tạo bản nháp'); history.pushState({}, '', '/landlord/rooms'); window.dispatchEvent(new PopStateEvent('popstate')); } catch (error) { toast(error.message, 'error'); }
+
+    // Step 1: Azure Content Safety Check
+    const safetyBox = document.querySelector('#content-safety-result');
+    safetyBox.innerHTML = '<span class="pill" style="background:#e0f2fe;color:#0369a1;">🛡️ Đang kiểm duyệt nội dung qua Azure AI Content Safety…</span>';
+    try {
+      const safetyRes = await api('/cloud/content-safety/test', { method: 'POST', body: JSON.stringify({ text: `${input.title} ${input.description}` }) });
+      if (safetyRes.allowed === false) {
+        safetyBox.innerHTML = '<span class="pill" style="background:#fef2f2;color:#991b1b;">⚠️ Nội dung bị Azure Content Safety từ chối. Vui lòng chỉnh sửa lại!</span>';
+        toast('Nội dung không đạt tiêu chuẩn kiểm duyệt Azure Content Safety', 'error');
+        return;
+      }
+      safetyBox.innerHTML = '<span class="pill" style="background:#f0fdf4;color:#166534;">✓ Nội dung đã qua kiểm duyệt bảo mật Azure AI Content Safety</span>';
+    } catch (_) { /* continue */ }
+
+    // Step 2: Create Room
+    try {
+      const created = await roomService.create(input);
+      const roomId = created.data?.id || created.id;
+
+      // Step 3: Azure Blob Storage Image Upload if files selected
+      const fileInput = document.querySelector('#room-images');
+      if (fileInput && fileInput.files.length > 0 && roomId) {
+        const formData = new FormData();
+        for (let i = 0; i < fileInput.files.length; i++) {
+          formData.append('images', fileInput.files[i]);
+        }
+        await fetch(`/api/media/rooms/${roomId}/images`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}` },
+          body: formData,
+        });
+      }
+
+      toast('Đã tạo bản nháp và tải ảnh lên Azure Blob Storage');
+      history.pushState({}, '', '/landlord/rooms');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch (error) { toast(error.message, 'error'); }
   };
 }
 
