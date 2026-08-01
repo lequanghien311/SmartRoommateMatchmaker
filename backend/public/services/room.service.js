@@ -1,4 +1,4 @@
-import { api } from './api.js';
+import { api, ApiError } from './api.js';
 export const roomService = {
   search: async (params = new URLSearchParams()) => {
     const keyword = params.get('keyword');
@@ -37,6 +37,22 @@ export const roomService = {
     return api(`/media/rooms/${id}/images`, { method: 'POST', body });
   },
   analyzeImage: (imageId) => api(`/media/images/${imageId}/vision`),
+  geocode: (input) => api('/rooms/geocode', { method: 'POST', body: JSON.stringify(input) }),
+  translate: (id) => api(`/rooms/${id}/translation?targetLanguage=en`),
+  language: (id) => api(`/rooms/${id}/language`),
+  speech: async (id) => {
+    const response = await fetch(`/api/rooms/${id}/speech`);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new ApiError(payload.message || 'Không thể tạo âm thanh', response.status, payload.errors || []);
+    }
+    return {
+      blob: await response.blob(),
+      provider: response.headers.get('X-Azure-Provider'),
+      fallbackUsed: response.headers.get('X-Azure-Fallback-Used') !== 'false',
+      contentType: response.headers.get('Content-Type'),
+    };
+  },
   amenities: () => api('/amenities'),
   favorites: () => api('/favorites'),
   favorite: (id) => api(`/favorites/${id}`, { method: 'POST' }),

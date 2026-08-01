@@ -18,6 +18,7 @@ class AzureTranslatorProvider {
         targetLanguage: safeTarget,
         checkedAt,
         provider: 'azure-translator-fallback',
+        fallbackUsed: true,
       };
     }
 
@@ -49,6 +50,8 @@ class AzureTranslatorProvider {
         targetLanguage: safeTarget,
         checkedAt,
         provider: 'azure-translator',
+        httpStatus: response.status,
+        fallbackUsed: false,
       };
     } catch (err) {
       return {
@@ -57,6 +60,7 @@ class AzureTranslatorProvider {
         targetLanguage: safeTarget,
         checkedAt,
         provider: 'azure-translator-fallback',
+        fallbackUsed: true,
         error: err.message,
       };
     }

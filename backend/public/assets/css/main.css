@@ -312,6 +312,8 @@ th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-s
 .azure-evidence.failed { border-color: #dc2626; background: #fef2f2; }
 .azure-evidence > span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.azure-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+#room-audio { width: 100%; margin: 8px 0 14px; }
 
 @media (max-width: 620px) {
   .managed-image { grid-template-columns: 1fr; }
