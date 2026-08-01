@@ -13,6 +13,8 @@ const AzureFunctionsProvider = require('../../shared/providers/cloud/AzureFuncti
 const AzureServiceBusProvider = require('../../shared/providers/messaging/AzureServiceBusProvider');
 const AzureKeyVaultProvider = require('../../shared/providers/cloud/AzureKeyVaultProvider');
 const { authenticate, authorize } = require('../../shared/middlewares/auth');
+const { pool } = require('../../database/connection');
+const { hydrateAzureSearchRooms } = require('./search-hydrator');
 
 const appConfig = new AzureAppConfigProvider();
 const contentSafety = new AzureContentSafetyProvider();
@@ -209,7 +211,8 @@ router.get('/search/status', async (_req, res) => {
 
 router.get('/search/rooms', async (req, res) => {
   const q = req.query?.q || 'sinh viên';
-  const result = await search.searchRooms(q);
+  const indexedResult = await search.searchRooms(q);
+  const result = await hydrateAzureSearchRooms(pool, indexedResult);
   if (result.fallbackUsed === false && result.source === 'azure-ai-search' && result.results?.length > 0) {
     cachedSearchStatus = {
       status: 'WORKING',

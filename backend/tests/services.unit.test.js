@@ -7,6 +7,7 @@ const MemoryCacheProvider = require('../src/shared/providers/cache/MemoryCachePr
 const LocalMessagingProvider = require('../src/shared/providers/messaging/LocalMessagingProvider');
 const MediaService = require('../src/modules/media/media.service');
 const RoomIntelligenceService = require('../src/modules/rooms/room-intelligence.service');
+const { hydrateAzureSearchRooms } = require('../src/modules/cloud/search-hydrator');
 
 const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 const messaging = new LocalMessagingProvider();
@@ -66,6 +67,44 @@ describe('RoomsService', () => {
     await expect(service.transition('room', { id: 'u', role: 'landlord' }, 'pending'))
       .rejects.toMatchObject({ statusCode: 503, errors: [expect.objectContaining({ moderationStatus: 'moderation_pending' })] });
     expect(repository.transition).not.toHaveBeenCalled();
+  });
+});
+
+describe('Azure Search hydration', () => {
+  test('giữ score và lấy giá mới nhất từ PostgreSQL theo thứ tự Search', async () => {
+    const firstId = '11111111-1111-4111-8111-111111111111';
+    const secondId = '22222222-2222-4222-8222-222222222222';
+    const db = {
+      query: jest.fn().mockResolvedValue({
+        rows: [
+          { id: secondId, title: 'Phòng B', monthly_price: 4200000 },
+          { id: firstId, title: 'Phòng A', monthly_price: 3100000 },
+        ],
+      }),
+    };
+    const indexed = {
+      provider: 'azure-ai-search', source: 'azure-ai-search', fallbackUsed: false,
+      results: [
+        { id: firstId, price: 999, '@search.score': 3.5 },
+        { id: secondId, price: 888, '@search.score': 2.1 },
+      ],
+    };
+
+    const result = await hydrateAzureSearchRooms(db, indexed);
+
+    expect(result.results.map((room) => room.id)).toEqual([firstId, secondId]);
+    expect(result.results[0]).toMatchObject({ monthly_price: 3100000, '@search.score': 3.5 });
+    expect(result.results[0].price).toBeUndefined();
+    expect(result).toMatchObject({
+      provider: 'azure-ai-search', fallbackUsed: false, hydratedFrom: 'postgresql', resultCount: 2,
+    });
+  });
+
+  test('không biến fallback thành kết quả Azure', async () => {
+    const fallback = { provider: 'local-search', fallbackUsed: true, results: [{ id: 'demo' }] };
+    const db = { query: jest.fn() };
+    await expect(hydrateAzureSearchRooms(db, fallback)).resolves.toBe(fallback);
+    expect(db.query).not.toHaveBeenCalled();
   });
 });
 
