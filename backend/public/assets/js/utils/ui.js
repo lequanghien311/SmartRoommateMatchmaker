@@ -44,8 +44,9 @@ export function confirmDialog({ title, message, confirmText = 'Xác nhận', dan
 
 export function roomCard(room, actions = '') {
   const image = room.images?.find((item) => item.isCover || item.is_cover) || room.images?.[0];
+  const imageUrl = image?.id ? `/api/media/images/${image.id}/content` : image?.url;
   return `<article class="room-card">
-    <div class="room-media">${image ? `<img src="${escapeHtml(image.url)}" alt="${escapeHtml(room.title)}" />` : '<div class="room-placeholder">Không gian mới</div>'}
+    <div class="room-media">${image ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(room.title)}" />` : '<div class="room-placeholder">Không gian mới</div>'}
       <button class="favorite" data-favorite="${room.id}" aria-label="Lưu phòng yêu thích">♡</button>
       ${room.status && room.status !== 'active' ? `<span class="room-status">${escapeHtml(room.status)}</span>` : ''}
     </div>

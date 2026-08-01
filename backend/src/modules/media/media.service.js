@@ -19,7 +19,12 @@ class MediaService {
         const analysis = this.vision
           ? await this.vision.analyzeImageBuffer(files[index].buffer, files[index].mimetype, stored.key)
           : null;
-        created.push({ ...image, vision: analysis });
+        created.push({
+          ...image,
+          storageProvider: this.storageProvider(image),
+          storageFallbackUsed: !image.url.includes('.blob.core.windows.net/'),
+          vision: analysis,
+        });
       } catch (error) {
         await this.storage.delete(stored.key).catch(() => {});
         throw error;
@@ -37,7 +42,27 @@ class MediaService {
     if (!this.vision) throw new AppError('Azure AI Vision chưa được cấu hình', 503);
     const buffer = await this.storage.readBuffer(image.storage_key);
     const result = await this.vision.analyzeImageBuffer(buffer, image.mime_type, image.storage_key);
-    return { imageId: image.id, imageUrl: image.url, ...result };
+    return {
+      imageId: image.id,
+      imageUrl: image.url,
+      storageProvider: this.storageProvider(image),
+      storageFallbackUsed: !image.url.includes('.blob.core.windows.net/'),
+      ...result,
+    };
+  }
+
+  async content(imageId) {
+    const image = await this.repository.find(imageId);
+    if (!image) throw new AppError('Không tìm thấy ảnh', 404);
+    return {
+      buffer: await this.storage.readBuffer(image.storage_key),
+      mimeType: image.mime_type,
+      provider: this.storageProvider(image),
+    };
+  }
+
+  storageProvider(image) {
+    return image.url.includes('.blob.core.windows.net/') ? 'azure-blob' : 'local-storage';
   }
 
   async remove(imageId, user) {

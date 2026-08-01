@@ -144,10 +144,10 @@ describe('MediaService', () => {
     const repository = {
       roomOwnedBy: jest.fn().mockResolvedValue(true),
       count: jest.fn().mockResolvedValue(0),
-      create: jest.fn().mockResolvedValue({ id: 'image-1', url: 'https://blob/image.jpg' }),
+      create: jest.fn().mockResolvedValue({ id: 'image-1', url: 'https://account.blob.core.windows.net/room-images/image.jpg' }),
     };
     const storage = {
-      save: jest.fn().mockResolvedValue({ key: 'rooms/r/image.jpg', url: 'https://blob/image.jpg' }),
+      save: jest.fn().mockResolvedValue({ key: 'rooms/r/image.jpg', url: 'https://account.blob.core.windows.net/room-images/image.jpg' }),
       delete: jest.fn(),
     };
     const vision = {
@@ -158,7 +158,21 @@ describe('MediaService', () => {
     const file = { buffer: Buffer.from('image'), mimetype: 'image/jpeg', size: 5, originalname: 'room.jpg' };
     const result = await new MediaService(repository, storage, vision).upload('room', { id: 'owner' }, [file]);
     expect(result[0].vision).toMatchObject({ provider: 'azure-ai-vision', fallbackUsed: false });
+    expect(result[0]).toMatchObject({ storageProvider: 'azure-blob', storageFallbackUsed: false });
     expect(vision.analyzeImageBuffer).toHaveBeenCalledWith(file.buffer, 'image/jpeg', 'rooms/r/image.jpg');
+  });
+
+  test('stream ảnh từ Blob qua backend với provider thật', async () => {
+    const repository = {
+      find: jest.fn().mockResolvedValue({
+        id: 'image-1', storage_key: 'rooms/r/image.jpg', mime_type: 'image/jpeg',
+        url: 'https://account.blob.core.windows.net/room-images/rooms/r/image.jpg',
+      }),
+    };
+    const storage = { readBuffer: jest.fn().mockResolvedValue(Buffer.from('image')) };
+    const result = await new MediaService(repository, storage).content('image-1');
+    expect(result).toMatchObject({ mimeType: 'image/jpeg', provider: 'azure-blob' });
+    expect(result.buffer).toEqual(Buffer.from('image'));
   });
 
   test('không cho người ngoài gọi lại Vision trên ảnh phòng', async () => {

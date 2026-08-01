@@ -21,6 +21,21 @@ class MediaController {
     }
   };
 
+  content = async (req, res, next) => {
+    try {
+      const image = await this.service.content(req.params.imageId);
+      res.set({
+        'Content-Type': image.mimeType,
+        'X-Azure-Provider': image.provider,
+        'X-Azure-Fallback-Used': String(image.provider !== 'azure-blob'),
+        'Cache-Control': 'public, max-age=3600',
+      });
+      res.status(200).send(image.buffer);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   remove = async (req, res, next) => {
     try {
       await this.service.remove(req.params.imageId, req.user);
