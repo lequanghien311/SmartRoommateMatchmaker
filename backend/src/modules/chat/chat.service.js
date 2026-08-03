@@ -41,13 +41,18 @@ class ChatService {
   }
   async markRead(userId, conversationId) {
     if (!(await this.repository.markRead(userId, conversationId))) throw new AppError('Không tìm thấy cuộc trò chuyện', 404);
-    await this.realtime.sendToConversation(conversationId, 'message:read', { conversationId, userId });
+    await this.realtime.sendToConversation(conversationId, 'message:read', {
+      conversation_id: conversationId,
+      user_id: userId,
+    });
   }
   async remove(userId, messageId) {
     const message = await this.repository.removeMessage(userId, messageId);
     if (!message) throw new AppError('Không tìm thấy tin nhắn hoặc bạn không phải người gửi', 404);
-    await this.realtime.sendToConversation(message.conversation_id, 'message:deleted', { messageId });
+    await this.realtime.sendToConversation(message.conversation_id, 'message:deleted', {
+      conversation_id: message.conversation_id,
+      message_id: messageId,
+    });
   }
 }
 module.exports = ChatService;
-

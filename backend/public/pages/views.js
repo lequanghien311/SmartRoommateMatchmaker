@@ -461,24 +461,23 @@ export async function conversations(selectedId) {
     list.innerHTML = result.data.length ? result.data.map((item) => `<a class="conversation ${selectedId === item.id ? 'active' : ''}" href="/conversations/${item.id}" data-link><div class="avatar">${escapeHtml(item.members[0]?.fullName || '?').charAt(0)}</div><div><strong>${escapeHtml(item.members[0]?.fullName || 'Cuộc trò chuyện')}</strong><div class="muted">${escapeHtml(item.last_message || 'Chưa có tin nhắn')}</div></div>${item.unread_count ? `<span class="badge">${item.unread_count}</span>` : ''}</a>`).join('') : emptyState('Chưa có hội thoại', 'Mở chi tiết phòng hoặc một kết quả ghép để bắt đầu.');
     if (selectedId) {
       await loadMessages(selectedId, result.data.find((item) => item.id === selectedId));
-      chatService.connect({
+      await chatService.connect(selectedId, {
         onMessage: (message) => {
           if (message.conversation_id === selectedId) loadMessages(selectedId);
         },
         onDelete: () => loadMessages(selectedId),
-        onTyping: (typing) => {
-          if (typing.conversationId === selectedId) {
-            document.querySelector('#chat-status').textContent = typing.typing ? 'Đang nhập…' : '';
-          }
+        onRead: () => loadMessages(selectedId),
+        onStatus: (status) => {
+          const labels = {
+            connecting: 'Đang kết nối…',
+            connected: 'Đã kết nối realtime',
+            disconnected: 'Realtime tạm thời gián đoạn',
+          };
+          document.querySelector('#chat-status').textContent = labels[status] || '';
         },
-        onPresence: (presence) => {
-          const otherId = result.data.find((item) => item.id === selectedId)?.members?.[0]?.id;
-          if (presence.userId === otherId) {
-            document.querySelector('#chat-status').textContent = presence.online ? 'Đang online' : 'Đã offline';
-          }
-        },
+      }).catch(() => {
+        document.querySelector('#chat-status').textContent = 'Realtime tạm thời gián đoạn';
       });
-      chatService.join(selectedId);
     }
   } catch (error) { document.querySelector('#conversation-list').innerHTML = errorState(error.message); }
   document.querySelector('#message-form').onsubmit = async (event) => {
@@ -487,11 +486,6 @@ export async function conversations(selectedId) {
     const content = event.currentTarget.content.value.trim();
     if (!content) return;
     try { await chatService.send(selectedId, content); event.currentTarget.reset(); await loadMessages(selectedId); } catch (error) { toast(error.message, 'error'); }
-  };
-  const messageInput = document.querySelector('#message-form input');
-  messageInput.oninput = () => {
-    if (!selectedId) return;
-    chatService.typing(selectedId, Boolean(messageInput.value.trim()));
   };
 }
 
