@@ -473,10 +473,14 @@ export async function conversations(selectedId) {
           const labels = {
             connecting: 'Đang kết nối…',
             connected: 'Đã kết nối realtime',
+            reconnecting: 'Đang kết nối lại…',
             disconnected: 'Realtime tạm thời gián đoạn',
+            degraded: 'Realtime tạm thời gián đoạn',
           };
           document.querySelector('#chat-status').textContent = labels[status] || '';
         },
+        onPoll: () => loadMessages(selectedId, activeConversation),
+        onReconnect: () => loadMessages(selectedId, activeConversation),
       }).catch(() => {
         document.querySelector('#chat-status').textContent = 'Realtime tạm thời gián đoạn';
       });

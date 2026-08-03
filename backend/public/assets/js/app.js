@@ -32,6 +32,7 @@ const routes = [
 ];
 
 async function router() {
+  if (!/^\/conversations\/[0-9a-f-]+$/.test(location.pathname)) chatService.disconnect();
   renderHeader(location.pathname);
   renderFooter();
   window.scrollTo({ top: 0, behavior: 'instant' });
