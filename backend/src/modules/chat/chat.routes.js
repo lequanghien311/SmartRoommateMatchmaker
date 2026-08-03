@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { pool, transaction } = require('../../database/connection');
 const env = require('../../config/env');
-const { messaging } = require('../../shared/providers');
+const { logger, messaging } = require('../../shared/providers');
 const { authenticate } = require('../../shared/middlewares/auth');
 const AppError = require('../../shared/errors/AppError');
 const SocketIO = require('./providers/SocketIORealtimeProvider');
@@ -22,7 +22,7 @@ const realtime = env.realtimeProvider === 'azure-web-pubsub'
     )
   : new SocketIO(env.corsOrigin);
 const repository = new Repository(pool, transaction);
-const service = new Service(repository, realtime, messaging, notifications);
+const service = new Service(repository, realtime, messaging, notifications, logger);
 const controller = new Controller(service);
 const router = express.Router();
 router.use(authenticate);

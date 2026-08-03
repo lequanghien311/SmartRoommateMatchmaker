@@ -281,18 +281,20 @@ export async function matchDetail(id) {
 export async function conversations(selectedId) {
   if (!requireAuth()) return;
   main().innerHTML = `${pageShell('Trò chuyện')}<section class="container layout-sidebar">${sidebar('/conversations')}<div class="panel chat-shell"><div class="conversation-list" id="conversation-list"></div><div class="chat-main"><div class="chat-head"><strong id="chat-title">Chọn cuộc trò chuyện</strong><small class="muted" id="chat-status"></small></div><div class="messages" id="messages">${emptyState('Chưa chọn hội thoại', 'Chọn một người để xem tin nhắn.')}</div><form class="message-form" id="message-form"><input name="content" maxlength="2000" placeholder="Viết tin nhắn…" aria-label="Tin nhắn" /><button class="button">Gửi</button></form></div></div></section>`;
+  let activeConversation;
   try {
     const result = await chatService.list();
     const list = document.querySelector('#conversation-list');
     list.innerHTML = result.data.length ? result.data.map((item) => `<a class="conversation ${selectedId === item.id ? 'active' : ''}" href="/conversations/${item.id}" data-link><div class="avatar">${escapeHtml(item.members[0]?.fullName || '?').charAt(0)}</div><div><strong>${escapeHtml(item.members[0]?.fullName || 'Cuộc trò chuyện')}</strong><div class="muted">${escapeHtml(item.last_message || 'Chưa có tin nhắn')}</div></div>${item.unread_count ? `<span class="badge">${item.unread_count}</span>` : ''}</a>`).join('') : emptyState('Chưa có hội thoại', 'Mở chi tiết phòng hoặc một kết quả ghép để bắt đầu.');
     if (selectedId) {
-      await loadMessages(selectedId, result.data.find((item) => item.id === selectedId));
+      activeConversation = result.data.find((item) => item.id === selectedId);
+      await loadMessages(selectedId, activeConversation);
       await chatService.connect(selectedId, {
         onMessage: (message) => {
-          if (message.conversation_id === selectedId) loadMessages(selectedId);
+          if (message.conversation_id === selectedId) loadMessages(selectedId, activeConversation);
         },
-        onDelete: () => loadMessages(selectedId),
-        onRead: () => loadMessages(selectedId),
+        onDelete: () => loadMessages(selectedId, activeConversation),
+        onRead: () => loadMessages(selectedId, activeConversation),
         onStatus: (status) => {
           const labels = {
             connecting: 'Đang kết nối…',
@@ -311,7 +313,20 @@ export async function conversations(selectedId) {
     if (!selectedId) return toast('Hãy chọn cuộc trò chuyện', 'error');
     const content = event.currentTarget.content.value.trim();
     if (!content) return;
-    try { await chatService.send(selectedId, content); event.currentTarget.reset(); await loadMessages(selectedId); } catch (error) { toast(error.message, 'error'); }
+    const submitButton = event.currentTarget.querySelector('button[type="submit"], button');
+    submitButton.disabled = true;
+    try {
+      const response = await chatService.send(selectedId, content);
+      event.currentTarget.reset();
+      await loadMessages(selectedId, activeConversation);
+      if (response.data?.realtimeDelivered === false) {
+        toast('Tin nhắn đã lưu, kết nối realtime đang được khôi phục.');
+      }
+    } catch (_error) {
+      toast('Không thể gửi tin nhắn. Vui lòng thử lại.', 'error');
+    } finally {
+      submitButton.disabled = false;
+    }
   };
 }
 
