@@ -2,9 +2,13 @@ const { WebPubSubServiceClient } = require('@azure/web-pubsub');
 const RealtimeProvider = require('./RealtimeProvider');
 
 class AzureWebPubSubProvider extends RealtimeProvider {
-  constructor(connectionString, hub) {
+  constructor(connectionString, hub = 'smart_roommate') {
     super();
     if (!connectionString || !hub) throw new Error('Thiếu cấu hình Azure Web PubSub');
+    if (!/^[A-Za-z][A-Za-z0-9_.,[\]()]{0,127}$/.test(hub)) {
+      throw new Error('Azure Web PubSub hub name is invalid');
+    }
+    this.hub = hub;
     this.client = new WebPubSubServiceClient(connectionString, hub);
   }
   initialize() {}
@@ -14,11 +18,15 @@ class AzureWebPubSubProvider extends RealtimeProvider {
   async sendToUser(userId, event, data) {
     await this.client.sendToUser(userId, { event, data }, { contentType: 'application/json' });
   }
-  async getClientAccessToken(userId) {
-    return this.client.getClientAccessToken({ userId });
+  async getClientAccessToken(userId, conversationId) {
+    return this.client.getClientAccessToken({
+      userId: String(userId),
+      groups: [`conversation:${conversationId}`],
+      expirationTimeInMinutes: 10,
+    });
   }
   async health() {
-    return { status: 'WORKING', provider: 'azure-web-pubsub', fallbackUsed: false };
+    return { status: 'CONFIGURED', provider: 'azure-web-pubsub', fallbackUsed: false };
   }
 }
 module.exports = AzureWebPubSubProvider;
