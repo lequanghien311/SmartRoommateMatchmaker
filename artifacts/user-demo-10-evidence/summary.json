@@ -1,0 +1,30 @@
+{
+  "verifiedAt": "2026-08-01T10:16:52.768Z",
+  "production": "https://app-smartroommate-ea.azurewebsites.net",
+  "deployedCommit": "278818e983c5f37acd9074e3e5da63b63bdc0a06",
+  "workflowRunId": 30694686498,
+  "workflowConclusion": "success",
+  "tests": {
+    "lint": "PASS",
+    "jest": "49/49 PASS",
+    "ciRunId": 30694686502
+  },
+  "userDemoPassCount": 10,
+  "services": [
+    { "service": "Azure App Service", "status": "USER-DEMO PASS", "url": "/", "endpoint": "GET /", "httpStatus": 200 },
+    { "service": "Azure Database for PostgreSQL", "status": "USER-DEMO PASS", "url": "/rooms", "endpoint": "GET /api/rooms", "httpStatus": 200 },
+    { "service": "Azure AI Search", "status": "USER-DEMO PASS", "url": "/rooms?keyword=sinh%20vien", "endpoint": "GET /api/cloud/search/rooms?q=sinh%20vien", "httpStatus": 200, "provider": "azure-ai-search", "fallbackUsed": false, "hydratedFrom": "postgresql", "score": 1.255615, "price": "2325000.00", "screenshot": "07-ai-search.png" },
+    { "service": "Azure Blob Storage", "status": "USER-DEMO PASS", "url": "/rooms/b503ce7c-6dc0-4dab-b3e3-a8c722d628b3/edit", "endpoint": "POST /api/media/rooms/:roomId/images; GET /api/media/images/:imageId/content", "httpStatus": [201, 200], "provider": "azure-blob", "fallbackUsed": false, "renderedAfterRefresh": { "width": 1200, "height": 800 }, "screenshot": "05-blob-vision-after-refresh.png" },
+    { "service": "Azure AI Vision", "status": "USER-DEMO PASS", "url": "/rooms/b503ce7c-6dc0-4dab-b3e3-a8c722d628b3/edit", "endpoint": "GET /api/media/images/:imageId/vision", "httpStatus": 200, "provider": "azure-ai-vision", "fallbackUsed": false, "caption": "train tracks next to a beach", "screenshot": "05-blob-vision-after-refresh.png" },
+    { "service": "Azure AI Translator", "status": "USER-DEMO PASS", "url": "/rooms/a83827a8-a7db-43d2-b862-f97417a8d59b", "endpoint": "GET /api/rooms/:id/translation?targetLanguage=en", "httpStatus": 200, "provider": "azure-translator", "fallbackUsed": false, "screenshot": "04-translator-language.png" },
+    { "service": "Azure AI Speech", "status": "USER-DEMO PASS", "url": "/rooms/a83827a8-a7db-43d2-b862-f97417a8d59b", "endpoint": "GET /api/rooms/:id/speech", "httpStatus": 200, "contentType": "audio/mpeg", "bytes": 91584, "provider": "azure-ai-speech", "fallbackUsed": false, "playedSeconds": 5.724, "screenshot": "06-speech-language.png" },
+    { "service": "Azure Maps", "status": "USER-DEMO PASS", "url": "/rooms/b503ce7c-6dc0-4dab-b3e3-a8c722d628b3/edit", "endpoint": "POST /api/rooms/geocode", "httpStatus": 200, "provider": "azure-maps", "fallbackUsed": false, "latitude": 10.824702, "longitude": 106.683582, "screenshot": "08-maps.png" },
+    { "service": "Azure AI Content Safety", "status": "USER-DEMO PASS", "url": "/rooms/b503ce7c-6dc0-4dab-b3e3-a8c722d628b3/edit", "endpoint": "PATCH /api/rooms/:id/status", "httpStatus": 200, "provider": "azure-content-safety", "fallbackUsed": false, "moderationStatus": "approved", "roomStatusAfter": "pending", "screenshot": "03-content-safety.png" },
+    { "service": "Azure AI Language", "status": "USER-DEMO PASS", "url": "/rooms/a83827a8-a7db-43d2-b862-f97417a8d59b", "endpoint": "GET /api/rooms/:id/language", "httpStatus": 200, "provider": "azure-ai-language", "fallbackUsed": false, "sentiment": "positive", "confidence": 0.97, "keyPhrases": ["Không gian"], "screenshot": "04-translator-language.png" }
+  ],
+  "smoke": {
+    "GET /api/health": 200,
+    "GET /": 200,
+    "GET /api/rooms": 200
+  }
+}

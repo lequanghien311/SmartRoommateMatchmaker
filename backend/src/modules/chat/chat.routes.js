@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { pool, transaction } = require('../../database/connection');
 const env = require('../../config/env');
-const { messaging } = require('../../shared/providers');
+const { logger, messaging } = require('../../shared/providers');
 const { authenticate } = require('../../shared/middlewares/auth');
 const AppError = require('../../shared/errors/AppError');
 const SocketIO = require('./providers/SocketIORealtimeProvider');
@@ -12,23 +12,44 @@ const Service = require('./chat.service');
 const Controller = require('./chat.controller');
 const { service: notifications } = require('../notifications/notifications.routes');
 
+const DEFAULT_WEB_PUBSUB_HUB = 'smart_roommate';
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const realtime = env.realtimeProvider === 'azure-web-pubsub'
-  ? new AzureWebPubSub(process.env.AZURE_WEB_PUBSUB_CONNECTION_STRING, process.env.AZURE_WEB_PUBSUB_HUB)
+  ? new AzureWebPubSub(
+      process.env.AZURE_WEB_PUBSUB_CONNECTION_STRING,
+      process.env.AZURE_WEB_PUBSUB_HUB || DEFAULT_WEB_PUBSUB_HUB,
+    )
   : new SocketIO(env.corsOrigin);
 const repository = new Repository(pool, transaction);
-const service = new Service(repository, realtime, messaging, notifications);
+const service = new Service(repository, realtime, messaging, notifications, logger);
 const controller = new Controller(service);
 const router = express.Router();
 router.use(authenticate);
 router.get('/', controller.list);
-router.get('/pubsub-token', async (req, res, next) => {
+router.get('/:conversationId/pubsub-token', async (req, res, next) => {
   try {
+    const { conversationId } = req.params;
+    if (!UUID_PATTERN.test(conversationId)) {
+      throw new AppError('Mã cuộc trò chuyện không hợp lệ', 400);
+    }
+    if (!(await repository.canAccess(req.user.id, conversationId))) {
+      throw new AppError('Bạn không có quyền truy cập cuộc trò chuyện này', 403);
+    }
     const cs = process.env.AZURE_WEB_PUBSUB_CONNECTION_STRING;
-    const hub = process.env.AZURE_WEB_PUBSUB_HUB || 'chat';
+    const hub = process.env.AZURE_WEB_PUBSUB_HUB || DEFAULT_WEB_PUBSUB_HUB;
     if (!cs) return res.status(400).json({ success: false, message: 'Thiếu AZURE_WEB_PUBSUB_CONNECTION_STRING' });
     const pubsub = new AzureWebPubSub(cs, hub);
-    const token = await pubsub.getClientAccessToken(req.user.id);
-    res.json({ success: true, data: { url: token.url, token: token.token, hub } });
+    const token = await pubsub.getClientAccessToken(req.user.id, conversationId);
+    res.json({
+      success: true,
+      data: {
+        url: token.url,
+        hub,
+        group: `conversation:${conversationId}`,
+        expiresInMinutes: 10,
+      },
+    });
   } catch (err) {
     next(err);
   }
