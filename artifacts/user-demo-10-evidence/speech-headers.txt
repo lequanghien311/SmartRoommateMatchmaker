@@ -1,0 +1,29 @@
+HTTP/1.1 200 OK
+Content-Length: 91584
+Content-Type: audio/mpeg
+Date: Sat, 01 Aug 2026 09:32:09 GMT
+Access-Control-Allow-Credentials: true
+Cache-Control: private, max-age=300
+ETag: W/"165c0-lnq+D0NoEqMak4XD3SWtJxq10J0"
+Set-Cookie: ARRAffinity=[REDACTED];Path=/;HttpOnly;Secure;Domain=app-smartroommate-ea.azurewebsites.net
+Set-Cookie: ARRAffinitySameSite=[REDACTED];Path=/;HttpOnly;SameSite=None;Secure;Domain=app-smartroommate-ea.azurewebsites.net
+Vary: Origin
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Content-Security-Policy: default-src 'self';base-uri 'self';font-src 'self' https://fonts.gstatic.com;form-action 'self';frame-ancestors 'self';img-src 'self' data: https:;object-src 'none';script-src 'self' https://cdn.jsdelivr.net;script-src-attr 'none';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;upgrade-insecure-requests;connect-src 'self' ws: wss:
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+RateLimit-Policy: 180;w=60
+RateLimit-Limit: 180
+RateLimit-Remaining: 178
+RateLimit-Reset: 38
+X-Request-ID: 329b22dc-6e70-4c8b-805a-3a2a816b27b9
+X-Azure-Provider: azure-ai-speech
+X-Azure-Fallback-Used: false

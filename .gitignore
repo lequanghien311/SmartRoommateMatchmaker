@@ -25,3 +25,6 @@ build-zip.ps1
 make-clean-backend-zip.ps1
 .DS_Store
 
+# Local-only evidence originals and rendered assignment preview
+/artifacts/user-demo-10-evidence/speech-headers.unredacted.local.txt
+/tmp/pdfs/thong-bao/
