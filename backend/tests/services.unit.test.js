@@ -238,6 +238,38 @@ describe('ChatService', () => {
     expect(realtime.sendToConversation).toHaveBeenCalled();
     expect(notifications.create).toHaveBeenCalled();
   });
+
+  test('message đã lưu vẫn trả success một lần khi realtime lỗi', async () => {
+    const repository = {
+      createMessage: jest.fn().mockResolvedValue({ id: 'm1', conversation_id: 'c1' }),
+      otherMembers: jest.fn().mockResolvedValue(['other']),
+    };
+    const failingRealtime = {
+      sendToConversation: jest.fn().mockRejectedValue(new Error('wss://example.webpubsub.azure.com?access_token=secret')),
+      sendToUser: jest.fn().mockResolvedValue(),
+    };
+    const independentMessaging = {
+      createEvent: jest.fn().mockReturnValue({ type: 'MessageCreated' }),
+      publish: jest.fn().mockResolvedValue(),
+    };
+    const independentNotifications = { create: jest.fn().mockResolvedValue() };
+    const safeLogger = { error: jest.fn() };
+    const service = new ChatService(
+      repository,
+      failingRealtime,
+      independentMessaging,
+      independentNotifications,
+      safeLogger,
+    );
+
+    const result = await service.send('user', { conversationId: 'c1', content: 'Xin chào' });
+
+    expect(repository.createMessage).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ id: 'm1', realtimeDelivered: false });
+    expect(independentNotifications.create).toHaveBeenCalledTimes(1);
+    expect(independentMessaging.publish).toHaveBeenCalledTimes(1);
+    expect(safeLogger.error.mock.calls[0][1].errorMessage).not.toContain('secret');
+  });
 });
 
 describe('ReportsService', () => {
