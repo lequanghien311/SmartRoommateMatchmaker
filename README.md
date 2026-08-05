@@ -3,7 +3,8 @@
 > **Môn học:** IN4526 — Điện toán đám mây  
 > **Ứng dụng:** Nền tảng Tìm phòng trọ & Ghép bạn ở thông minh cho sinh viên (SmartRoomie)  
 > **Website Production:** [https://app-smartroommate-ea.azurewebsites.net](https://app-smartroommate-ea.azurewebsites.net)  
-> **Trang Audit 20 Dịch vụ Cloud:** [https://app-smartroommate-ea.azurewebsites.net/cloud-services.html](https://app-smartroommate-ea.azurewebsites.net/cloud-services.html)  
+> **Tổng quan 22 Dịch vụ Cloud:** 20 dịch vụ nền tảng ứng dụng và 2 dịch vụ GitHub phục vụ quản lý mã nguồn, CI/CD
+> **Trang Audit Runtime:** [https://app-smartroommate-ea.azurewebsites.net/cloud-services.html](https://app-smartroommate-ea.azurewebsites.net/cloud-services.html)
 > **Nguồn sự thật kiểm toán (Canonical Report):** [`docs/AZURE-SERVICES-FINAL-REPORT.md`](docs/AZURE-SERVICES-FINAL-REPORT.md)  
 > **Hướng dẫn Demo trực tiếp:** [`docs/AZURE-SERVICES-DEMO.md`](docs/AZURE-SERVICES-DEMO.md)
 
@@ -23,11 +24,13 @@ Hệ thống được phát triển trên kiến trúc đám mây Cloud-Native (
 
 ---
 
-## ☁️ 2. DANH SÁCH 20 DỊCH VỤ AZURE CLOUD HOẠT ĐỘNG THỰC TẾ (WORKING)
+## ☁️ 2. DANH SÁCH 22 DỊCH VỤ CLOUD
 
-Hệ thống tích hợp **20 dịch vụ Azure Cloud hoạt động thật trực tiếp (100% WORKING)**, không sử dụng dữ liệu giả (mock) hay fallback.
+Hệ thống sử dụng **22 dịch vụ Cloud**: 20 dịch vụ phục vụ ứng dụng và hạ tầng vận hành, cùng **GitHub Repository** và **GitHub Actions** cho quản lý mã nguồn và CI/CD. Cách gọi này không đồng nghĩa với “22 dịch vụ Azure”; trạng thái từng dịch vụ được công bố riêng theo bằng chứng runtime thực tế.
 
-| STT | Tên Dịch Vụ Cloud (Azure Service) | Loại Khái Niệm / Mục Đích Sử Dụng | Trạng Thái Runtime | Bằng Chứng Chạy Thực Tế (Runtime Evidence) |
+Trạng thái xác minh hiện tại: **20 WORKING** và **2 CONFIGURED**. Dịch vụ ở trạng thái `CONFIGURED` không được tính là runtime PASS cho đến khi phép thử chuyên biệt thành công.
+
+| STT | Tên Dịch Vụ Cloud | Loại Khái Niệm / Mục Đích Sử Dụng | Trạng Thái Runtime | Bằng Chứng Chạy Thực Tế (Runtime Evidence) |
 |---|---|---|:---:|---|
 | 1 | **Azure App Service (Web App)** | Hosting Web App Node.js 22 Linux | **WORKING** | Phản hồi `HTTP 200` tại `/api/health` |
 | 2 | **Azure App Service Plan** | Hạ tầng Compute B1 Basic hosting cho Web App | **WORKING** | Đảm bảo tài nguyên CPU/RAM vận hành ứng dụng |
@@ -47,14 +50,20 @@ Hệ thống tích hợp **20 dịch vụ Azure Cloud hoạt động thật tr�
 | 16 | **Azure AI Speech** | Tổng hợp giọng nói (Text-To-Speech) | **WORKING** | Phát âm thanh MP3 mô tả phòng (HoaiMyNeural) |
 | 17 | **Azure Monitor Action Group** | Nhóm nhận thông báo sự cố | **WORKING** | Alert Rule `alert-smartroommate-http5xx` |
 | 18 | **Azure Function App** | Microservice Serverless độc lập | **WORKING** | Trigger `health-check` phản hồi `HTTP 200` |
-| 19 | **Azure Service Bus** | Hàng đợi tin nhắn AMQP 1.0 (Message Queue)| **WORKING** | Publisher & PeekLock Event Verification |
-| 20 | **Azure Key Vault** | Bảo mật Secret & Mật khẩu kết nối | **WORKING** | Managed Identity Secret Read (`demo-secret`) |
+| 19 | **Azure Service Bus** | Hàng đợi tin nhắn AMQP 1.0 (Message Queue) | **CONFIGURED** | Queue provider đã cấu hình; cần chạy lại Publisher & PeekLock verification để đạt runtime PASS |
+| 20 | **Azure Key Vault** | Bảo mật Secret & Mật khẩu kết nối | **CONFIGURED** | Resource và Managed Identity đã cấu hình; cần chạy lại secret-read verification để đạt runtime PASS |
+| 21 | **GitHub Repository** | Quản lý mã nguồn, branch, commit và Pull Request | **WORKING** | Lịch sử commit và PR được lưu tại repository `SmartRoommateMatchmaker`; PR #8 đã merge thành công |
+| 22 | **GitHub Actions** | CI/CD tự động cho lint, test, đóng gói và deployment | **WORKING** | CI run `30832907912` và deployment run `30832903356` đều `completed/success` |
 
 ---
 
 ## 🏗️ 3. KIẾN TRÚC HỆ THỐNG (SYSTEM ARCHITECTURE)
 
 ```text
+[ GitHub Repository ] ──► [ GitHub Actions CI/CD ] ──► Azure App Service
+                                   │
+                                   └──► Lint, Test, đóng gói ZIP và kiểm tra Health
+
 [ Trình duyệt Client / SPA ]
          │
          ├──► Azure App Service (Node.js Express REST API) ──► PostgreSQL Flexible Server
@@ -81,8 +90,13 @@ Mở trang [`https://app-smartroommate-ea.azurewebsites.net/login`](https://app-
 - **🏠 Chủ trọ:** `landlord1@smartroommate.vn` / `Demo@123`
 - **🛡️ Quản trị viên:** `admin@smartroommate.vn` / `Demo@123`
 
-### 📊 Bước 2: Kiểm thử Trực tiếp 20 Dịch vụ Cloud (`/cloud-services.html`)
-Mở trang [`https://app-smartroommate-ea.azurewebsites.net/cloud-services.html`](https://app-smartroommate-ea.azurewebsites.net/cloud-services.html). Mỗi dịch vụ đều có nút **"Test Endpoint"** giúp gọi trực tiếp API Azure Cloud và trả về kết quả JSON thời gian thực trước mặt giảng viên.
+### 📊 Bước 2: Kiểm thử Runtime các dịch vụ ứng dụng (`/cloud-services.html`)
+Mở trang [`https://app-smartroommate-ea.azurewebsites.net/cloud-services.html`](https://app-smartroommate-ea.azurewebsites.net/cloud-services.html). Dashboard cung cấp bằng chứng runtime cho nhóm dịch vụ ứng dụng và hạ tầng; trạng thái `CONFIGURED` phải được trình bày đúng là chưa hoàn tất phép thử runtime.
+
+### 🔄 Bước 3: Demo GitHub Repository và GitHub Actions
+- Mở repository để trình bày branch, commit nhỏ và Pull Request review/merge.
+- Mở tab **Actions**, chọn CI run `30832907912` để chứng minh lint/test tự động.
+- Mở deployment run `30832903356` để chứng minh quy trình đóng gói, deploy và kiểm tra production health hoàn tất thành công.
 
 ---
 
