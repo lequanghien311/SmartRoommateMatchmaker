@@ -28,7 +28,7 @@ Hệ thống được phát triển trên kiến trúc đám mây Cloud-Native (
 
 Hệ thống sử dụng **22 dịch vụ Cloud**: 20 dịch vụ phục vụ ứng dụng và hạ tầng vận hành, cùng **GitHub Repository** và **GitHub Actions** cho quản lý mã nguồn và CI/CD. Cách gọi này không đồng nghĩa với “22 dịch vụ Azure”; trạng thái từng dịch vụ được công bố riêng theo bằng chứng runtime thực tế.
 
-Trạng thái xác minh hiện tại: **20 WORKING** và **2 CONFIGURED**. Dịch vụ ở trạng thái `CONFIGURED` không được tính là runtime PASS cho đến khi phép thử chuyên biệt thành công.
+Trạng thái xác minh hiện tại: **21 WORKING** và **1 CONFIGURED**. Dịch vụ ở trạng thái `CONFIGURED` không được tính là runtime PASS cho đến khi phép thử chuyên biệt thành công.
 
 | STT | Tên Dịch Vụ Cloud | Loại Khái Niệm / Mục Đích Sử Dụng | Trạng Thái Runtime | Bằng Chứng Chạy Thực Tế (Runtime Evidence) |
 |---|---|---|:---:|---|
@@ -50,7 +50,7 @@ Trạng thái xác minh hiện tại: **20 WORKING** và **2 CONFIGURED**. Dịc
 | 16 | **Azure AI Speech** | Tổng hợp giọng nói (Text-To-Speech) | **WORKING** | Phát âm thanh MP3 mô tả phòng (HoaiMyNeural) |
 | 17 | **Azure Monitor Action Group** | Nhóm nhận thông báo sự cố | **WORKING** | Alert Rule `alert-smartroommate-http5xx` |
 | 18 | **Azure Function App** | Microservice Serverless độc lập | **WORKING** | Trigger `health-check` phản hồi `HTTP 200` |
-| 19 | **Azure Service Bus** | Hàng đợi tin nhắn AMQP 1.0 (Message Queue) | **CONFIGURED** | Queue provider đã cấu hình; cần chạy lại Publisher & PeekLock verification để đạt runtime PASS |
+| 19 | **Azure Service Bus** | Hàng đợi tin nhắn AMQP 1.0 (Message Queue) | **WORKING** | Runtime verification trả `sent=true`, `received=true`, `completed=true`, `fallbackUsed=false` |
 | 20 | **Azure Key Vault** | Bảo mật Secret & Mật khẩu kết nối | **CONFIGURED** | Resource và Managed Identity đã cấu hình; cần chạy lại secret-read verification để đạt runtime PASS |
 | 21 | **GitHub Repository** | Quản lý mã nguồn, branch, commit và Pull Request | **WORKING** | Lịch sử commit và PR được lưu tại repository `SmartRoommateMatchmaker`; PR #8 đã merge thành công |
 | 22 | **GitHub Actions** | CI/CD tự động cho lint, test, đóng gói và deployment | **WORKING** | CI run `30832907912` và deployment run `30832903356` đều `completed/success` |
