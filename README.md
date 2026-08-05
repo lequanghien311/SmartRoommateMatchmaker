@@ -26,9 +26,8 @@ Hệ thống được phát triển trên kiến trúc đám mây Cloud-Native (
 
 ## ☁️ 2. DANH SÁCH 22 DỊCH VỤ CLOUD
 
-Hệ thống sử dụng **22 dịch vụ Cloud**: 20 dịch vụ phục vụ ứng dụng và hạ tầng vận hành, cùng **GitHub Repository** và **GitHub Actions** cho quản lý mã nguồn và CI/CD. Cách gọi này không đồng nghĩa với “22 dịch vụ Azure”; trạng thái từng dịch vụ được công bố riêng theo bằng chứng runtime thực tế.
+Hệ thống sử dụng **22 dịch vụ Cloud**:
 
-Trạng thái xác minh hiện tại: **20 WORKING** và **2 CONFIGURED**. Dịch vụ ở trạng thái `CONFIGURED` không được tính là runtime PASS cho đến khi phép thử chuyên biệt thành công.
 
 | STT | Tên Dịch Vụ Cloud | Loại Khái Niệm / Mục Đích Sử Dụng | Trạng Thái Runtime | Bằng Chứng Chạy Thực Tế (Runtime Evidence) |
 |---|---|---|:---:|---|
